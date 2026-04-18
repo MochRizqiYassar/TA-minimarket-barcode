@@ -6,6 +6,8 @@ use App\Models\BarangMasuk;
 use App\Models\Barang;
 use App\Models\Kulakan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Models\DetailKulakan;
 
 class BarangMasukController extends Controller
 {
@@ -17,26 +19,82 @@ class BarangMasukController extends Controller
 
     public function create()
     {
-        $barangs  = Barang::all();
-        $kulakans = Kulakan::where('status', 'approved')->get();
-        return view('barang-masuk.create', compact('barangs', 'kulakans'));
+        $details = DetailKulakan::with('barang', 'kulakan')
+            ->where('banyak', '>', 0)
+            ->whereHas('kulakan', function ($q) {
+                $q->where('status', 'approved');
+            })
+            ->whereNotNull('id_barang') // 🔥 penting
+            ->get()
+            ->groupBy('id_barang')
+            ->map(function ($group) {
+
+                $first = $group->first();
+
+                return [
+                    'id_barang'   => $first->id_barang,
+                    'nama_barang' => $first->barang?->nama_barang ?? 'Barang sudah dihapus',
+                    'stok'        => $group->sum('banyak'),
+                ];
+            });
+
+        return view('barang-masuk.create', compact('details'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'id_barang'        => 'required|exists:barang,id_barang',
-            'id_kulakan'       => 'required|exists:kulakan,id_kulakan',
-            'jumlah'           => 'required|integer|min:1',
-            'tanggal_masuk'    => 'required|date',
-            'tanggal_expired'  => 'nullable|date|after:tanggal_masuk',
-        ]);
+        DB::transaction(function () use ($request) {
 
-        BarangMasuk::create($request->only(
-            'id_barang', 'id_kulakan', 'jumlah', 'tanggal_masuk', 'tanggal_expired'
-        ));
+            foreach ($request->items as $item) {
 
-        return redirect()->route('barang-masuk.index')->with('success', 'Barang masuk berhasil dicatat.');
+                $jumlah = (int) $item['jumlah'];
+                if ($jumlah <= 0) continue;
+
+                $idBarang = $item['id_barang'];
+
+                // 🔥 Ambil semua detail kulakan (FIFO)
+                $details = DetailKulakan::where('id_barang', $idBarang)
+                    ->where('banyak', '>', 0)
+                    ->whereHas('kulakan', function ($q) {
+                        $q->where('status', 'approved');
+                    })
+                    ->orderBy('created_at') // FIFO
+                    ->get();
+
+                foreach ($details as $detail) {
+
+                    if ($jumlah <= 0) break;
+
+                    $ambil = min($jumlah, $detail->banyak);
+
+                    // Kurangi stok kulakan
+                    $detail->decrement('banyak', $ambil);
+
+                    // Tambah stok barang
+                    $detail->barang->increment('stok', $ambil);
+
+                    // Simpan barang masuk
+                    BarangMasuk::create([
+                        'id_barang' => $idBarang,
+                        'id_kulakan' => $detail->id_kulakan,
+                        'jumlah' => $ambil,
+                        'tanggal_masuk' => now(),
+                        'tanggal_expired' => $item['tanggal_expired'],
+                        'nama_barang' => $detail->barang?->nama_barang ?? 'Barang lama',
+                        'harga_beli' => $detail->barang?->harga_beli ?? 0,
+                    ]);
+
+                    $jumlah -= $ambil;
+                }
+
+                if ($jumlah > 0) {
+                    throw new \Exception('Stok kulakan tidak mencukupi!');
+                }
+            }
+        });
+
+        return redirect()->route('barang-masuk.index')
+            ->with('success', 'Barang masuk berhasil');
     }
 
     public function show(BarangMasuk $barangMasuk)
@@ -47,26 +105,21 @@ class BarangMasukController extends Controller
 
     public function edit(BarangMasuk $barangMasuk)
     {
-        $barangs  = Barang::all();
-        $kulakans = Kulakan::where('status', 'approved')->get();
-        return view('barang-masuk.edit', compact('barangMasuk', 'barangs', 'kulakans'));
+        return view('barang-masuk.edit', compact('barangMasuk'));
     }
 
     public function update(Request $request, BarangMasuk $barangMasuk)
     {
         $request->validate([
-            'id_barang'       => 'required|exists:barang,id_barang',
-            'id_kulakan'      => 'required|exists:kulakan,id_kulakan',
-            'jumlah'          => 'required|integer|min:1',
-            'tanggal_masuk'   => 'required|date',
-            'tanggal_expired' => 'nullable|date|after:tanggal_masuk',
+            'tanggal_expired' => 'nullable|date',
         ]);
 
-        $barangMasuk->update($request->only(
-            'id_barang', 'id_kulakan', 'jumlah', 'tanggal_masuk', 'tanggal_expired'
-        ));
+        $barangMasuk->update([
+            'tanggal_expired' => $request->tanggal_expired
+        ]);
 
-        return redirect()->route('barang-masuk.index')->with('success', 'Barang masuk berhasil diperbarui.');
+        return redirect()->route('barang-masuk.index')
+            ->with('success', 'Tanggal expired berhasil diperbarui');
     }
 
     public function destroy(BarangMasuk $barangMasuk)

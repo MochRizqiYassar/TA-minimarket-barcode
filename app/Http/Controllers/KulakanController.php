@@ -37,6 +37,7 @@ class KulakanController extends Controller
             'details.*.id_tipe_barang' => 'required|exists:tipe_barang,id_tipe_barang',
             'details.*.banyak'         => 'required|integer|min:1',
             'details.*.harga_satuan'   => 'required|numeric|min:0',
+            'details.*.id_barang' => 'required|exists:barang,id_barang',
         ]);
 
         DB::transaction(function () use ($request) {
@@ -116,16 +117,28 @@ class KulakanController extends Controller
             $totalHarga = 0;
 
             foreach ($request->details as $detail) {
-                $subtotal    = $detail['banyak'] * $detail['harga_satuan'];
-                $totalHarga += $subtotal;
+
+                // 🔥 CEK / BUAT BARANG
+                $barang = Barang::firstOrCreate(
+                    ['nama_barang' => $detail['nama_barang']],
+                    [
+                        'barcode' => uniqid(),
+                        'id_kategori' => 1,
+                        'id_tipe_barang' => $detail['id_tipe_barang'],
+                        'harga_beli' => $detail['harga_satuan'],
+                        'harga_jual' => $detail['harga_satuan'] * 1.2,
+                    ]
+                );
+
+                $subtotal = $detail['banyak'] * $detail['harga_satuan'];
 
                 DetailKulakan::create([
-                    'id_kulakan'     => $kulakan->id_kulakan,
-                    'id_barang'      => $detail['id_barang'],
+                    'id_kulakan' => $kulakan->id_kulakan,
+                    'id_barang' => $barang->id_barang,
                     'id_tipe_barang' => $detail['id_tipe_barang'],
-                    'banyak'         => $detail['banyak'],
-                    'harga_satuan'   => $detail['harga_satuan'],
-                    'subtotal'       => $subtotal,
+                    'banyak' => $detail['banyak'],
+                    'harga_satuan' => $detail['harga_satuan'],
+                    'subtotal' => $subtotal,
                 ]);
             }
 
@@ -144,18 +157,6 @@ class KulakanController extends Controller
 
         DB::transaction(function () use ($kulakan) {
             $kulakan->update(['status' => 'approved']);
-
-            foreach ($kulakan->detailKulakans as $detail) {
-                BarangMasuk::create([
-                    'id_barang'   => $detail->id_barang,
-                    'id_kulakan'  => $kulakan->id_kulakan,
-                    'jumlah'      => $detail->banyak,
-                    'tanggal_masuk' => now()->toDateString(),
-                ]);
-
-                // Update stok barang
-                $detail->barang->increment('stok', $detail->banyak);
-            }
         });
 
         return redirect()->route('kulakan.show', $kulakan)->with('success', 'Kulakan berhasil diapprove dan stok diperbarui.');

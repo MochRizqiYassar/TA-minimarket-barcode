@@ -28,7 +28,7 @@ class PenjualanController extends Controller
         $request->validate([
             'tanggal_penjualan'  => 'required|date',
             'details'            => 'required|array|min:1',
-            'details.*.id_barang'=> 'required|exists:barang,id_barang',
+            'details.*.id_barang' => 'required|exists:barang,id_barang',
             'details.*.jumlah'   => 'required|integer|min:1',
         ]);
 
