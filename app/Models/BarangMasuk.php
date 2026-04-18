@@ -11,8 +11,13 @@ class BarangMasuk extends Model
     protected $primaryKey = 'id_barang_masuk';
 
     protected $fillable = [
-        'id_barang', 'id_kulakan', 'jumlah',
-        'tanggal_masuk', 'tanggal_expired',
+        'id_barang',
+        'id_kulakan',
+        'jumlah',
+        'tanggal_masuk',
+        'tanggal_expired',
+        'nama_barang',
+        'harga_beli',
     ];
 
     protected $casts = [

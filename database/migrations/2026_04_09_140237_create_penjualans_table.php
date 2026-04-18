@@ -8,16 +8,16 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('penjualan', function (Blueprint $table) {
-    $table->id('id_penjualan');
-    $table->date('tanggal_penjualan');
+            $table->id('id_penjualan');
+            $table->date('tanggal_penjualan');
 
-    $table->foreignId('id_user')
-          ->constrained('users')
-          ->onDelete('restrict');
+            $table->foreignId('id_user')
+                ->constrained('users')
+                ->onDelete('restrict');
 
-    $table->decimal('total_harga', 15, 2)->default(0);
-    $table->timestamps();
-});
+            $table->decimal('total_harga', 15, 2)->default(0);
+            $table->timestamps();
+        });
     }
 
     public function down(): void
