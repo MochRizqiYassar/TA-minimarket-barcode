@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->date('tanggal_masuk');
             $table->date('tanggal_expired')->nullable();
             $table->timestamps();
+            $table->enum('status', ['pending', 'approved'])->default('pending');
         });
     }
 

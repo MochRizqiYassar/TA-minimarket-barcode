@@ -11,13 +11,18 @@ class Penjualan extends Model
     protected $table = 'penjualan';
     protected $primaryKey = 'id_penjualan';
 
-    protected $fillable = ['tanggal_penjualan', 'id_user', 'total_harga'];
+    protected $fillable = [
+    'tanggal_penjualan',
+    'id_user',
+    'total_harga',
+    'status',
+];
 
     protected $casts = ['tanggal_penjualan' => 'date'];
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'id_user', 'id_user');
+        return $this->belongsTo(User::class, 'id_user', 'id');
     }
 
     public function detailPenjualans(): HasMany

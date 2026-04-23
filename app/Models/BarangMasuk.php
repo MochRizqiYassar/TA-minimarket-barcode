@@ -18,6 +18,7 @@ class BarangMasuk extends Model
         'tanggal_expired',
         'nama_barang',
         'harga_beli',
+        'status',
     ];
 
     protected $casts = [

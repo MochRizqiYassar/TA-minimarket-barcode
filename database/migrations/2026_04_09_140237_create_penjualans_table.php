@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->foreignId('id_user')
                 ->constrained('users')
                 ->onDelete('restrict');
+            $table->enum('status', ['pending', 'approved'])->default('pending');
 
             $table->decimal('total_harga', 15, 2)->default(0);
             $table->timestamps();

@@ -15,6 +15,7 @@
                 <th>Supplier</th>
                 <th>Jumlah</th>
                 <th>Tanggal</th>
+                <th>Status</th>
                 <th>Aksi</th>
             </tr>
         </thead>
@@ -28,13 +29,28 @@
                 <td>{{ $bm->jumlah }}</td>
                 <td>{{ $bm->tanggal_masuk }}</td>
                 <td>
-                    <a href="{{ route('barang-masuk.edit',$bm) }}" class="btn btn-warning btn-sm">Edit</a>
+    @if($bm->status == 'pending')
+        <span class="badge bg-warning">Pending</span>
+    @else
+        <span class="badge bg-success">Approved</span>
+    @endif
+</td>
 
-                    <form action="{{ route('barang-masuk.destroy',$bm) }}" method="POST" class="d-inline">
-                        @csrf @method('DELETE')
-                        <button class="btn btn-danger btn-sm">Hapus</button>
-                    </form>
-                </td>
+<td>
+    @if($bm->status == 'pending')
+        <a href="{{ route('barang-masuk.edit',$bm) }}" class="btn btn-warning btn-sm">Edit</a>
+
+        <form action="{{ route('barang-masuk.approve', $bm) }}" method="POST" class="d-inline">
+            @csrf
+            <button class="btn btn-success btn-sm">Approve</button>
+        </form>
+    @endif
+
+    <form action="{{ route('barang-masuk.destroy',$bm) }}" method="POST" class="d-inline">
+        @csrf @method('DELETE')
+        <button class="btn btn-danger btn-sm">Hapus</button>
+    </form>
+</td>
             </tr>
             @endforeach
         </tbody>

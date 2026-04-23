@@ -1,5 +1,4 @@
-
-    @extends('layouts.admin')
+@extends('layouts.admin')
 
 @section('content')
 <div class="container">
@@ -22,11 +21,13 @@
         <tbody>
             @foreach($kulakan->detailKulakans as $d)
             <tr>
-                <td>{{ $d->barang->nama_barang }}</td>
-                <td>{{ $d->tipeBarang->nama_tipe }}</td>
+                <td>
+                    {{ $d->barang?->nama_barang ?? $d->nama_barang ?? 'Barang sudah dihapus' }}
+                </td>
+                <td>{{ $d->tipeBarang?->nama_tipe ?? '-' }}</td>
                 <td>{{ $d->banyak }}</td>
-                <td>{{ $d->harga_satuan }}</td>
-                <td>{{ $d->subtotal }}</td>
+                <td>Rp {{ number_format($d->harga_satuan) }}</td>
+                <td>Rp {{ number_format($d->subtotal) }}</td>
             </tr>
             @endforeach
         </tbody>

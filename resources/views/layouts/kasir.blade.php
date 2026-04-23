@@ -39,7 +39,7 @@
                         <li class="sidebar-title">Menu</li>
 
                         <li class="sidebar-item active ">
-                            <a href="index.html" class='sidebar-link'>
+                            <a href="{{ route('dashboard') }}" class='sidebar-link'>
                                 <i class="bi bi-grid-fill"></i>
                                 <span>Dashboard</span>
                             </a>
@@ -47,46 +47,16 @@
                         <li class="sidebar-item has-sub">
                             <a href="#" class='sidebar-link'>
                                 <i class="bi bi-stack"></i>
-                                <span>Data Kulakan</span>
+                                <span>Data Penjualan</span>
                             </a>
 
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="{{ route('kulakan.index') }}">Kulakan</a>
-                                </li>
-
-                                <li class="submenu-item">
-                                    <a href="{{ route('suppliers.index') }}">Supplier</a>
-                                </li>
-
-                            </ul>
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-collection-fill"></i>
-                                <span>Data Barang</span>
-                            </a>
-                            <ul class="submenu">
-                                <li class="submenu-item">
-                                    <a href="{{ route('barang.index') }}">Barang</a>
-                                </li>
-
-                                <li class="submenu-item">
-                                    <a href="{{ route('barang-masuk.index') }}">Barang Masuk</a>
-                                </li>
-
-                                <li class="submenu-item">
-                                    <a href="{{ route('tipe-barang.index') }}">Tipe Barang</a>
-                                </li>
-
-                                <li class="submenu-item">
-                                    <a href="{{ route('kategoris.index') }}">Kategori</a>
+                                    <a href="{{ route('penjualan.index') }}">Penjualan</a>
                                 </li>
                             </ul>
                         </li>
-
                         <li class="sidebar-item  ">
                             <a href="{{ route('logout') }}" class='sidebar-link'
                                 onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
