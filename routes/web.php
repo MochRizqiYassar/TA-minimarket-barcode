@@ -9,6 +9,7 @@ use App\Http\Controllers\BarangController;
 use App\Http\Controllers\BarangMasukController;
 use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\TipeBarangController;
+use App\Http\Controllers\PenjualanController;
 // Route::get('/', function () {
 //     return view('welcome');
 // });
@@ -46,6 +47,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('suppliers', SupplierController::class);
     Route::resource('barang', BarangController::class);
     Route::resource('barang-masuk', BarangMasukController::class);
+    Route::post('barang-masuk/{barangMasuk}/approve', [BarangMasukController::class, 'approve'])
+    ->name('barang-masuk.approve');
     Route::resource('kategoris', KategoriController::class);
     Route::resource('tipe-barang', TipeBarangController::class);
     Route::get('/barcode', [BarangController::class, 'formBarcodeManual'])->name('barcode.form');
@@ -56,6 +59,9 @@ Route::middleware(['auth', 'role:kasir'])->group(function () {
     Route::get('/kasir/dashboard', function () {
         return view('kasir.dashboard');
     })->name('kasir.dashboard');
+    Route::resource('penjualan', PenjualanController::class);
+    Route::post('penjualan/{penjualan}/approve', [PenjualanController::class, 'approve'])
+    ->name('penjualan.approve');
 });
 
 require __DIR__ . '/auth.php';

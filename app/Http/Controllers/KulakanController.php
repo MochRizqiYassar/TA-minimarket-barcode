@@ -54,13 +54,19 @@ class KulakanController extends Controller
                 $subtotal    = $detail['banyak'] * $detail['harga_satuan'];
                 $totalHarga += $subtotal;
 
+                $barang = Barang::find($detail['id_barang']);
+
                 DetailKulakan::create([
-                    'id_kulakan'      => $kulakan->id_kulakan,
-                    'id_barang'       => $detail['id_barang'],
-                    'id_tipe_barang'  => $detail['id_tipe_barang'],
-                    'banyak'          => $detail['banyak'],
-                    'harga_satuan'    => $detail['harga_satuan'],
-                    'subtotal'        => $subtotal,
+                    'id_kulakan' => $kulakan->id_kulakan,
+                    'id_barang' => $detail['id_barang'],
+                    'id_tipe_barang' => $detail['id_tipe_barang'],
+                    'banyak' => $detail['banyak'],
+                    'harga_satuan' => $detail['harga_satuan'],
+                    'subtotal' => $subtotal,
+
+                    // 🔥 snapshot
+                    'nama_barang' => $barang?->nama_barang,
+                    'harga_satuan_snapshot' => $detail['harga_satuan'],
                 ]);
             }
 
@@ -117,6 +123,8 @@ class KulakanController extends Controller
             $totalHarga = 0;
 
             foreach ($request->details as $detail) {
+                $subtotal = $detail['banyak'] * $detail['harga_satuan'];
+                $totalHarga += $subtotal;
 
                 // 🔥 CEK / BUAT BARANG
                 $barang = Barang::firstOrCreate(
@@ -139,6 +147,10 @@ class KulakanController extends Controller
                     'banyak' => $detail['banyak'],
                     'harga_satuan' => $detail['harga_satuan'],
                     'subtotal' => $subtotal,
+
+                    // 🔥 snapshot
+                    'nama_barang' => $barang->nama_barang,
+                    'harga_satuan_snapshot' => $detail['harga_satuan'],
                 ]);
             }
 

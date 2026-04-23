@@ -11,10 +11,17 @@ class DetailPenjualan extends Model
     protected $primaryKey = 'id_detail_jual';
 
     protected $fillable = [
-        'id_penjualan', 'id_barang', 'jumlah', 'harga',
-        'harga_beli_saat_transaksi', 'subtotal',
-        'laba_satuan', 'total_laba',
-    ];
+    'id_penjualan',
+    'id_barang',
+    'jumlah',
+    'harga',
+    'harga_beli_saat_transaksi',
+    'subtotal',
+    'laba_satuan',
+    'total_laba',
+    'nama_barang',
+    'harga_snapshot',
+];
 
     public function penjualan(): BelongsTo
     {

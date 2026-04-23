@@ -35,6 +35,7 @@ class BarangMasukController extends Controller
                     'id_barang'   => $first->id_barang,
                     'nama_barang' => $first->barang?->nama_barang ?? 'Barang sudah dihapus',
                     'stok'        => $group->sum('banyak'),
+                    'foto'        => $first->barang?->foto ?? null,
                 ];
             });
 
@@ -45,12 +46,18 @@ class BarangMasukController extends Controller
     {
         DB::transaction(function () use ($request) {
 
-            foreach ($request->items as $item) {
+            $items = json_decode($request->details_json, true);
 
-                $jumlah = (int) $item['jumlah'];
+            if (!$items) {
+                throw new \Exception('Tidak ada barang dipilih!');
+            }
+
+            foreach ($items as $item) {
+
+                $jumlah = (int) $item['qty'];
                 if ($jumlah <= 0) continue;
 
-                $idBarang = $item['id_barang'];
+                $idBarang = $item['id'];
 
                 // 🔥 Ambil semua detail kulakan (FIFO)
                 $details = DetailKulakan::where('id_barang', $idBarang)
@@ -67,21 +74,15 @@ class BarangMasukController extends Controller
 
                     $ambil = min($jumlah, $detail->banyak);
 
-                    // Kurangi stok kulakan
-                    $detail->decrement('banyak', $ambil);
-
-                    // Tambah stok barang
-                    $detail->barang->increment('stok', $ambil);
-
-                    // Simpan barang masuk
                     BarangMasuk::create([
                         'id_barang' => $idBarang,
                         'id_kulakan' => $detail->id_kulakan,
                         'jumlah' => $ambil,
                         'tanggal_masuk' => now(),
-                        'tanggal_expired' => $item['tanggal_expired'],
+                        'tanggal_expired' => $item['tanggal_expired'] ?? null,
                         'nama_barang' => $detail->barang?->nama_barang ?? 'Barang lama',
                         'harga_beli' => $detail->barang?->harga_beli ?? 0,
+                        'status' => 'pending',
                     ]);
 
                     $jumlah -= $ambil;
@@ -94,7 +95,7 @@ class BarangMasukController extends Controller
         });
 
         return redirect()->route('barang-masuk.index')
-            ->with('success', 'Barang masuk berhasil');
+            ->with('success', 'Data berhasil disimpan');
     }
 
     public function show(BarangMasuk $barangMasuk)
@@ -110,21 +111,70 @@ class BarangMasukController extends Controller
 
     public function update(Request $request, BarangMasuk $barangMasuk)
     {
+        if ($barangMasuk->status === 'approved') {
+            return back()->with('error', 'Tidak bisa edit setelah approve');
+        }
+
         $request->validate([
+            'jumlah' => 'required|integer|min:1',
             'tanggal_expired' => 'nullable|date',
         ]);
 
         $barangMasuk->update([
-            'tanggal_expired' => $request->tanggal_expired
+            'jumlah' => $request->jumlah,
+            'tanggal_expired' => $request->tanggal_expired,
         ]);
 
         return redirect()->route('barang-masuk.index')
-            ->with('success', 'Tanggal expired berhasil diperbarui');
+            ->with('success', 'Data berhasil diperbarui');
     }
 
     public function destroy(BarangMasuk $barangMasuk)
     {
         $barangMasuk->delete();
         return redirect()->route('barang-masuk.index')->with('success', 'Barang masuk berhasil dihapus.');
+    }
+
+    public function approve(BarangMasuk $barangMasuk)
+    {
+        if ($barangMasuk->status === 'approved') {
+            return back()->with('error', 'Sudah di-approve');
+        }
+
+        DB::transaction(function () use ($barangMasuk) {
+
+            // 🔥 ambil detail kulakan FIFO
+            $details = DetailKulakan::where('id_barang', $barangMasuk->id_barang)
+                ->where('banyak', '>', 0)
+                ->whereHas('kulakan', function ($q) {
+                    $q->where('status', 'approved');
+                })
+                ->orderBy('created_at')
+                ->get();
+
+            $sisa = $barangMasuk->jumlah;
+
+            foreach ($details as $detail) {
+                if ($sisa <= 0) break;
+
+                $ambil = min($sisa, $detail->banyak);
+
+                // 🔥 baru terjadi perubahan stok di sini
+                $detail->decrement('banyak', $ambil);
+                $detail->barang->increment('stok', $ambil);
+
+                $sisa -= $ambil;
+            }
+
+            if ($sisa > 0) {
+                throw new \Exception('Stok kulakan tidak cukup!');
+            }
+
+            $barangMasuk->update([
+                'status' => 'approved'
+            ]);
+        });
+
+        return back()->with('success', 'Barang berhasil di-approve');
     }
 }

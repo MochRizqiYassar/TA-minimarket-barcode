@@ -21,11 +21,11 @@
                 </tr>
             </thead>
             <tbody>
+                <a href="{{ route('barcode.form') }}" class="btn btn-secondary btn-sm">
+                    Cetak Barcode
+                </a>
                 @foreach ($barangs as $b)
                     <tr>
-                        <a href="{{ route('barcode.form') }}" class="btn btn-secondary btn-sm">
-    Cetak Barcode
-</a>
                         <!-- FOTO -->
                         <td>
                             @if ($b->foto)
