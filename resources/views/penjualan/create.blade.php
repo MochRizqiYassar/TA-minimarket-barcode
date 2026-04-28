@@ -50,7 +50,7 @@
                             @foreach ($barangs as $b)
                                 <div class="col-md-6 mb-3 product-item" data-id="{{ $b->id_barang }}"
                                     data-nama="{{ $b->nama_barang }}" data-harga="{{ $b->harga_jual }}"
-                                    data-stok="{{ $b->stok }}">
+                                    data-stok="{{ $b->stok }}" data-barcode="{{ $b->barcode }}">
 
                                     <div class="card p-2 text-center product-card"
                                         style="cursor:pointer;
@@ -193,5 +193,62 @@
                 el.style.display = nama.includes(val) ? '' : 'none';
             });
         });
+        let scanBuffer = '';
+        let scanTimeout;
+
+        document.addEventListener('keydown', function(e) {
+            if (scanTimeout) clearTimeout(scanTimeout);
+
+            // ENTER = selesai scan
+            if (e.key === "Enter") {
+                handleScan(scanBuffer.trim());
+                scanBuffer = '';
+                return;
+            }
+
+            scanBuffer += e.key;
+
+            // reset kalau bukan scanner
+            scanTimeout = setTimeout(() => {
+                scanBuffer = '';
+            }, 300);
+        });
+
+        function handleScan(barcode) {
+    let items = [];
+
+    document.querySelectorAll('.product-item').forEach(el => {
+        if (el.dataset.barcode == barcode) {
+            items.push(el);
+        }
+    });
+
+    if (items.length === 1) {
+        let el = items[0];
+        addToCart(
+            el.dataset.id,
+            el.dataset.nama,
+            parseInt(el.dataset.stok)
+        );
+
+    } else if (items.length > 1) {
+        let pilihan = items.map((el, i) => `${i+1}. ${el.dataset.nama}`).join('\n');
+        let pilih = prompt("Pilih barang:\n" + pilihan);
+
+        let index = parseInt(pilih) - 1;
+
+        if (items[index]) {
+            let el = items[index];
+            addToCart(
+                el.dataset.id,
+                el.dataset.nama,
+                parseInt(el.dataset.stok)
+            );
+        }
+
+    } else {
+        alert('Barcode tidak ditemukan!');
+    }
+}
     </script>
 @endsection

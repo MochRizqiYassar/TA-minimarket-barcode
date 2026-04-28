@@ -47,9 +47,9 @@
                         <div class="row">
                             @foreach ($details as $item)
                                 <div class="col-6 mb-2">
-                                    <div class="card p-2 text-center product-item" style="cursor:pointer"
-                                        data-id="{{ $item['id_barang'] }}" data-nama="{{ $item['nama_barang'] }}"
-                                        data-stok="{{ $item['stok'] }}">
+                                    <div class="card p-2 text-center product-item" data-id="{{ $item['id_barang'] }}"
+                                        data-nama="{{ $item['nama_barang'] }}" data-stok="{{ $item['stok'] }}"
+                                        data-barcode="{{ $item['barcode'] }}">
 
                                         <img src="{{ $item['foto'] ? asset('storage/' . $item['foto']) : asset('assets/images/no-image.png') }}"
                                             height="80" style="object-fit:cover">
@@ -61,7 +61,7 @@
                                         </div>
                                     </div>
                                 </div>
-        
+
                         </div>
                         @endforeach
                     </div>
@@ -203,5 +203,54 @@
                 el.style.display = nama.includes(val) ? '' : 'none';
             });
         });
+        let scanBuffer = '';
+        let scanTimeout;
+
+        document.addEventListener('keydown', function(e) {
+            if (scanTimeout) clearTimeout(scanTimeout);
+
+            // ENTER = scan selesai
+            if (e.key === "Enter") {
+                handleScan(scanBuffer.trim());
+                scanBuffer = '';
+                return;
+            }
+
+            // Tambah karakter
+            scanBuffer += e.key;
+
+            // Reset kalau lama (bukan scanner)
+            scanTimeout = setTimeout(() => {
+                scanBuffer = '';
+            }, 300);
+        });
+
+        function handleScan(barcode) {
+            let items = [];
+
+            document.querySelectorAll('.product-item').forEach(el => {
+                if (el.dataset.barcode == barcode) {
+                    items.push(el);
+                }
+            });
+
+            if (items.length === 1) {
+                let el = items[0];
+                addToCart(el.dataset.id, el.dataset.nama, parseInt(el.dataset.stok));
+            } else if (items.length > 1) {
+                // 🔥 tampilkan pilihan
+                let pilihan = items.map((el, i) => `${i+1}. ${el.dataset.nama}`).join('\n');
+                let pilih = prompt("Pilih barang:\n" + pilihan);
+
+                let index = parseInt(pilih) - 1;
+
+                if (items[index]) {
+                    let el = items[index];
+                    addToCart(el.dataset.id, el.dataset.nama, parseInt(el.dataset.stok));
+                }
+            } else {
+                alert('Barcode tidak ditemukan!');
+            }
+        }
     </script>
 @endsection
