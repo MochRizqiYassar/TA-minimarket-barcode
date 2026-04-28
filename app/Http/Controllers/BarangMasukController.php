@@ -36,6 +36,7 @@ class BarangMasukController extends Controller
                     'nama_barang' => $first->barang?->nama_barang ?? 'Barang sudah dihapus',
                     'stok'        => $group->sum('banyak'),
                     'foto'        => $first->barang?->foto ?? null,
+                    'barcode'     => $first->barang?->barcode,
                 ];
             });
 

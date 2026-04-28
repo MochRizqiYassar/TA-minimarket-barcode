@@ -10,6 +10,7 @@ use App\Http\Controllers\BarangMasukController;
 use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\TipeBarangController;
 use App\Http\Controllers\PenjualanController;
+use App\Http\Controllers\Admin\UserController;
 // Route::get('/', function () {
 //     return view('welcome');
 // });
@@ -42,17 +43,36 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/dashboard', function () {
         return view('admin.dashboard');
     })->name('admin.dashboard');
+    Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users');
+    Route::post('/admin/users/{id}/approve', [UserController::class, 'approve'])->name('admin.users.approve');
+    Route::delete('/admin/users/{id}/reject', [UserController::class, 'reject'])
+    ->name('admin.users.reject');
     Route::resource('kulakan', KulakanController::class);
     Route::post('kulakan/{kulakan}/approve', [KulakanController::class, 'approve'])->name('kulakan.approve');
+    Route::post('/kulakan/ocr', [KulakanController::class, 'ocr'])->name('kulakan.ocr');
     Route::resource('suppliers', SupplierController::class);
     Route::resource('barang', BarangController::class);
     Route::resource('barang-masuk', BarangMasukController::class);
     Route::post('barang-masuk/{barangMasuk}/approve', [BarangMasukController::class, 'approve'])
-    ->name('barang-masuk.approve');
+        ->name('barang-masuk.approve');
     Route::resource('kategoris', KategoriController::class);
     Route::resource('tipe-barang', TipeBarangController::class);
     Route::get('/barcode', [BarangController::class, 'formBarcodeManual'])->name('barcode.form');
     Route::post('/barcode', [BarangController::class, 'generateBarcodeManual'])->name('barcode.generate');
+
+    Route::get('/laporan/barang-masuk', [App\Http\Controllers\LaporanBarangMasukController::class, 'index'])
+    ->name('laporan.barang-masuk');
+    Route::get('/laporan/barang-masuk/pdf', [App\Http\Controllers\LaporanBarangMasukController::class, 'exportPdf'])
+    ->name('laporan.barang-masuk.pdf');
+    Route::get('/laporan/penjualan', [App\Http\Controllers\LaporanPenjualanController::class, 'index'])
+    ->name('laporan.penjualan');
+Route::get('/laporan/penjualan/pdf', [App\Http\Controllers\LaporanPenjualanController::class, 'exportPdf'])
+    ->name('laporan.penjualan.pdf');
+    Route::get('/laporan/barang-terlaris', [App\Http\Controllers\LaporanBarangTerlarisController::class, 'index'])
+    ->name('laporan.barang-terlaris');
+
+Route::get('/laporan/barang-terlaris/pdf', [App\Http\Controllers\LaporanBarangTerlarisController::class, 'exportPdf'])
+    ->name('laporan.barang-terlaris.pdf');
 });
 
 Route::middleware(['auth', 'role:kasir'])->group(function () {

@@ -10,6 +10,7 @@ use App\Models\DetailKulakan;
 use App\Models\BarangMasuk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\OcrService;
 
 class KulakanController extends Controller
 {
@@ -27,20 +28,45 @@ class KulakanController extends Controller
         return view('kulakan.create', compact('suppliers', 'barangs', 'tipeBarangs'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, OcrService $ocrService)
     {
         $request->validate([
             'id_supplier'       => 'required|exists:supplier,id_supplier',
             'tanggal_kulakan'   => 'required|date',
             'details'           => 'required|array|min:1',
-            'details.*.id_barang'      => 'required|exists:barang,id_barang',
+            'details.*.id_barang' => 'nullable|exists:barang,id_barang',
             'details.*.id_tipe_barang' => 'required|exists:tipe_barang,id_tipe_barang',
             'details.*.banyak'         => 'required|integer|min:1',
             'details.*.harga_satuan'   => 'required|numeric|min:0',
-            'details.*.id_barang' => 'required|exists:barang,id_barang',
         ]);
 
-        DB::transaction(function () use ($request) {
+        // 🔥 TARUH DI SINI (SEBELUM TRANSACTION)
+        $ocrResults = [];
+
+if ($request->hasFile('nota_image')) {
+    $path = $request->file('nota_image')->store('nota', 'public');
+    $fullPath = storage_path('app/public/' . $path);
+
+    $ocrResults = $ocrService->process($fullPath);
+}
+
+        // 🔥 BARU SIMPAN KE DATABASE
+        DB::transaction(function () use ($request, $ocrResults) {
+
+            // 🔥 GABUNG DATA FORM + OCR
+            $details = $request->details ?? [];
+
+            if (!empty($ocrResults)) {
+                foreach ($ocrResults as $ocr) {
+                    $details[] = [
+                        'nama_barang' => $ocr['nama_barang'],
+                        'banyak' => $ocr['banyak'],
+                        'harga_satuan' => $ocr['harga_satuan'],
+                        'id_tipe_barang' => 1, // default
+                    ];
+                }
+            }
+
             $totalHarga = 0;
 
             $kulakan = Kulakan::create([
@@ -50,22 +76,39 @@ class KulakanController extends Controller
                 'total_harga'     => 0,
             ]);
 
-            foreach ($request->details as $detail) {
-                $subtotal    = $detail['banyak'] * $detail['harga_satuan'];
-                $totalHarga += $subtotal;
+            // 🔥 PAKAI $details (BUKAN $request->details)
+            foreach ($details as $detail) {
 
-                $barang = Barang::find($detail['id_barang']);
+                // 🔥 HANDLE 2 KONDISI (manual vs OCR)
+                if (isset($detail['id_barang'])) {
+                    // 👉 dari form manual
+                    $barang = Barang::find($detail['id_barang']);
+                } else {
+                    // 👉 dari OCR (BELUM ADA id_barang)
+                    $barang = Barang::firstOrCreate(
+                        ['nama_barang' => $detail['nama_barang']],
+                        [
+                            'barcode' => uniqid(),
+                            'id_kategori' => 1,
+                            'id_tipe_barang' => $detail['id_tipe_barang'],
+                            'harga_beli' => $detail['harga_satuan'],
+                            'harga_jual' => $detail['harga_satuan'] * 1.2,
+                        ]
+                    );
+                }
+
+                $subtotal = $detail['banyak'] * $detail['harga_satuan'];
+                $totalHarga += $subtotal;
 
                 DetailKulakan::create([
                     'id_kulakan' => $kulakan->id_kulakan,
-                    'id_barang' => $detail['id_barang'],
+                    'id_barang' => $barang->id_barang,
                     'id_tipe_barang' => $detail['id_tipe_barang'],
                     'banyak' => $detail['banyak'],
                     'harga_satuan' => $detail['harga_satuan'],
                     'subtotal' => $subtotal,
 
-                    // 🔥 snapshot
-                    'nama_barang' => $barang?->nama_barang,
+                    'nama_barang' => $barang->nama_barang,
                     'harga_satuan_snapshot' => $detail['harga_satuan'],
                 ]);
             }
@@ -185,4 +228,10 @@ class KulakanController extends Controller
 
         return redirect()->route('kulakan.index')->with('success', 'Kulakan berhasil dihapus.');
     }
+    public function ocr(Request $request, OcrService $ocrService)
+{
+    return response()->json(
+        $ocrService->handleUpload($request)
+    );
+}
 }

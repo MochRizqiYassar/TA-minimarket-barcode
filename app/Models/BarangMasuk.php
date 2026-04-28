@@ -19,6 +19,7 @@ class BarangMasuk extends Model
         'nama_barang',
         'harga_beli',
         'status',
+        'barcode',
     ];
 
     protected $casts = [

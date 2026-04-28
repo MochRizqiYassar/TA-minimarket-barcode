@@ -20,6 +20,11 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
             $table->enum('role', ['admin', 'kasir'])->default('kasir');
+            $table->enum('status', [
+                'pending',
+                'active',
+                'rejected'
+            ])->default('pending');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

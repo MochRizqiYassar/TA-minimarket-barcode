@@ -87,6 +87,37 @@
                             </ul>
                         </li>
 
+                        <li class="sidebar-item">
+                            <a href="{{ route('admin.users') }}" class='sidebar-link'>
+                                <i class="bi bi-person-check"></i>
+                                <span>Verifikasi Akun</span>
+                            </a>
+                        </li>
+
+                        <li class="sidebar-item">
+                            <a href="{{ route('laporan.barang-masuk') }}" class="sidebar-link">
+
+                                <i class="bi bi-file-earmark-text"></i>
+
+                                <span>Laporan Barang Masuk</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="{{ route('laporan.penjualan') }}" class="sidebar-link">
+
+                                <i class="bi bi-cash-stack"></i>
+
+                                <span>Laporan Penjualan</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="{{ route('laporan.barang-terlaris') }}" class="sidebar-link">
+
+                                <i class="bi bi-bar-chart"></i>
+
+                                <span>Barang Terlaris</span>
+                            </a>
+                        </li>
                         <li class="sidebar-item  ">
                             <a href="{{ route('logout') }}" class='sidebar-link'
                                 onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
