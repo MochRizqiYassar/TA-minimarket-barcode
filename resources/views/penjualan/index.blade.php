@@ -24,7 +24,7 @@
 
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="penjualan-body">
                 @foreach ($penjualans as $p)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
@@ -63,5 +63,43 @@
                 @endforeach
             </tbody>
         </table>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+
+                let offlinePenjualans =
+                    JSON.parse(localStorage.getItem('offline_penjualans')) || [];
+
+                let tbody = document.getElementById('penjualan-body');
+
+                offlinePenjualans.forEach((p, index) => {
+
+                    tbody.innerHTML =
+                        `
+        <tr style="background:#fff3cd;">
+            <td>OFFLINE</td>
+            <td>${p.tanggal_penjualan}</td>
+            <td>Kasir</td>
+            <td>
+                Rp ${parseInt(p.total_harga).toLocaleString()}
+            </td>
+
+            <td>
+                <span class="badge bg-secondary">
+                    Belum Sync
+                </span>
+            </td>
+
+            <td>
+                <button class="btn btn-secondary btn-sm" disabled>
+                    Menunggu Online
+                </button>
+            </td>
+        </tr>
+        ` +
+                        tbody.innerHTML;
+                });
+
+            });
+        </script>
     </div>
 @endsection

@@ -37,35 +37,32 @@
                             </td>
 
                             <td>
-                                @if ($user->status == 'pending')
-                                    <div class="d-flex gap-1">
+    <div class="d-flex gap-1">
 
-                                        <!-- APPROVE -->
-                                        <form method="POST" action="{{ route('admin.users.approve', $user->id) }}">
-                                            @csrf
+        {{-- APPROVE --}}
+        @if ($user->status != 'active')
+            <form method="POST" action="{{ route('admin.users.approve', $user->id) }}">
+                @csrf
 
-                                            <button class="btn btn-success btn-sm">
-                                                Approve
-                                            </button>
-                                        </form>
+                <button class="btn btn-success btn-sm">
+                    Approve
+                </button>
+            </form>
+        @endif
 
-                                        <!-- TOLAK -->
-                                        <form method="POST" action="{{ route('admin.users.reject', $user->id) }}">
+        {{-- TOLAK / HAPUS --}}
+        <form method="POST" action="{{ route('admin.users.reject', $user->id) }}">
+            @csrf
+            @method('DELETE')
 
-                                            @csrf
-                                            @method('DELETE')
+            <button class="btn btn-danger btn-sm"
+                onclick="return confirm('Yakin ingin menghapus / menolak akun ini?')">
+                Delete
+            </button>
+        </form>
 
-                                            <button class="btn btn-danger btn-sm"
-                                                onclick="return confirm('Tolak akun ini?')">
-                                                Tolak
-                                            </button>
-                                        </form>
-
-                                    </div>
-                                @else
-                                    -
-                                @endif
-                            </td>
+    </div>
+</td>
                         </tr>
                     @endforeach
                 </tbody>

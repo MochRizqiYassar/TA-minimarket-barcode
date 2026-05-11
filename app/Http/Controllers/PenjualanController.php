@@ -25,6 +25,12 @@ class PenjualanController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->expectsJson()) {
+
+            $request->merge([
+                'details_json' => $request->details_json
+            ]);
+        }
         $request->validate([
             'tanggal_penjualan' => 'required|date',
             'details_json'      => 'required|json',
@@ -81,7 +87,17 @@ class PenjualanController extends Controller
             $penjualan->update(['total_harga' => $totalHarga]);
         });
 
-        return redirect()->route('penjualan.index')->with('success', 'Penjualan berhasil dicatat.');
+        if ($request->expectsJson()) {
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Penjualan berhasil dicatat.'
+    ]);
+}
+
+return redirect()
+    ->route('penjualan.index')
+    ->with('success', 'Penjualan berhasil dicatat.');
     }
 
     public function show(Penjualan $penjualan)

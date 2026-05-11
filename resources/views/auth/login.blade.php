@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,14 +16,15 @@
 
 <body>
 
-    </html>
-    <div id="auth">
-        <div class="row h-100">
-            <div class="col-lg-5 col-12">
-                <div id="auth-left">
+</html>
+<div id="auth">
+    <div class="row h-100">
+        <div class="col-lg-5 col-12">
+            <div id="auth-left">
 
-                <div class="auth-logo">
-                    <a href="/"><img src="{{ asset('assets/images/logo/logo.png') }}" alt="Logo"></a>
+                <div class="logo">
+                    <img src="{{ asset('assets/images/logo/toko1.png') }}" alt="Toko1"
+                        style="width: 210px; height: auto;">
                 </div>
 
                 <h1 class="auth-title">Log in</h1>
@@ -107,8 +109,29 @@
             </div>
         </div>
 
-        <div class="col-lg-7 d-none d-lg-block">
-            <div id="auth-right"></div>
+        <div class="col-lg-7 d-none d-lg-block p-0">
+
+            <div id="auth-right"
+                style="
+            background-image:
+                linear-gradient(
+                    rgba(15, 23, 42, 0.55),
+                    rgba(37, 99, 235, 0.35)
+                ),
+                url('{{ asset('assets/images/logo/gambar.png') }}');
+
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        ">
+
+
+            </div>
+
         </div>
     </div>
 </div>

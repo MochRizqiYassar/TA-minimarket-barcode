@@ -17,7 +17,7 @@ class BarangController extends Controller
 {
     public function index()
     {
-        $barangs = Barang::with('kategori', 'tipeBarang')->get();
+        $barangs = Barang::with('kategori', 'tipeBarang')->paginate(10);
         return view('barang.index', compact('barangs'));
     }
 
@@ -39,6 +39,8 @@ class BarangController extends Controller
             'harga_beli'     => 'required|numeric|min:0',
             'harga_jual'     => 'required|numeric|min:0',
             'foto'           => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'stok_minimum_etalase' => 'required|integer|min:0',
+            'stok_minimum_gudang' => 'required|integer|min:0',
         ]);
 
         $data = $request->except('foto');
@@ -58,6 +60,8 @@ class BarangController extends Controller
             'id_kategori' => $data['id_kategori'],
             'id_tipe_barang' => $data['id_tipe_barang'],
             'stok' => 0,
+            'stok_minimum_etalase' => $data['stok_minimum_etalase'],
+            'stok_minimum_gudang' => $data['stok_minimum_gudang'],
             'harga_beli' => $data['harga_beli'],
             'harga_jual' => $data['harga_jual'],
             'foto' => $data['foto'] ?? null,
@@ -95,6 +99,8 @@ class BarangController extends Controller
             'harga_beli'     => 'required|numeric|min:0',
             'harga_jual'     => 'required|numeric|min:0',
             'foto'           => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'stok_minimum_etalase' => 'required|integer|min:0',
+            'stok_minimum_gudang' => 'required|integer|min:0',
         ]);
 
         $data = $request->except('foto');
@@ -124,24 +130,24 @@ class BarangController extends Controller
         return redirect()->route('barang.index')->with('success', 'Barang berhasil dihapus.');
     }
     public function formBarcodeManual()
-{
-    return view('barcode.form');
-}
-public function generateBarcodeManual(Request $request)
-{
-    $request->validate([
-        'kode' => 'required|string',
-        'jumlah' => 'required|integer|min:1|max:100'
-    ]);
+    {
+        return view('barcode.form');
+    }
+    public function generateBarcodeManual(Request $request)
+    {
+        $request->validate([
+            'kode' => 'required|string',
+            'jumlah' => 'required|integer|min:1|max:100'
+        ]);
 
-    $kode = $request->kode;
-    $jumlah = $request->jumlah;
+        $kode = $request->kode;
+        $jumlah = $request->jumlah;
 
-    // 🔥 WAJIB base64
-    $barcode = DNS1D::getBarcodeHTML($kode, 'C128');
+        // 🔥 WAJIB base64
+        $barcode = DNS1D::getBarcodeHTML($kode, 'C128');
 
-    $pdf = Pdf::loadView('barcode.pdf', compact('kode', 'jumlah', 'barcode'));
+        $pdf = Pdf::loadView('barcode.pdf', compact('kode', 'jumlah', 'barcode'));
 
-    return $pdf->setPaper('A4')->stream('barcode.pdf');
-}
+        return $pdf->setPaper('A4')->stream('barcode.pdf');
+    }
 }

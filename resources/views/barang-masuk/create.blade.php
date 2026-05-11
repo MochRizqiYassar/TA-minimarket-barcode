@@ -9,7 +9,7 @@
 
             <div class="row">
                 <!-- LEFT: KERANJANG -->
-                <div class="col-md-7">
+                <div class="col-md-8">
                     <div class="card p-3">
 
                         <table class="table">
@@ -37,33 +37,56 @@
                         </div>
                     </div>
                 </div>
+                        <!-- RIGHT: LIST BARANG -->
+                        <div class="col-md-4">
+                            <div class="card p-3">
 
-                <!-- RIGHT: LIST BARANG -->
-                <div class="col-md-5">
-                    <div class="card p-3">
+                                <input type="text" id="search" class="form-control mb-3" placeholder="Cari barang...">
 
-                        <input type="text" id="search" class="form-control mb-3" placeholder="Cari barang...">
+                                <div class="product-list-scroll" id="product-list">
+                                    @foreach ($details as $item)
+                                        <div class="product-item mb-2"
+    data-id="{{ $item['id_barang'] }}"
+    data-nama="{{ $item['nama_barang'] }}"
+    data-stok="{{ $item['stok'] }}"
+    data-barcode="{{ $item['barcode'] }}">
 
-                        <div class="row">
-                            @foreach ($details as $item)
-                                <div class="col-6 mb-2">
-                                    <div class="card p-2 text-center product-item" data-id="{{ $item['id_barang'] }}"
-                                        data-nama="{{ $item['nama_barang'] }}" data-stok="{{ $item['stok'] }}"
-                                        data-barcode="{{ $item['barcode'] }}">
+    <div class="card p-2 product-card" style="cursor:pointer;">
 
-                                        <img src="{{ $item['foto'] ? asset('storage/' . $item['foto']) : asset('assets/images/no-image.png') }}"
-                                            height="80" style="object-fit:cover">
+        <div class="d-flex align-items-center gap-2">
 
-                                        <small>{{ $item['nama_barang'] }}</small>
+            <img
+                src="{{ $item['foto']
+                    ? asset('storage/' . $item['foto'])
+                    : asset('assets/images/no-image.png') }}"
+                style="
+                    width:70px;
+                    height:70px;
+                    object-fit:cover;
+                    border-radius:10px;
+                ">
 
-                                        <div class="badge bg-info">
-                                            Stok: {{ $item['stok'] }}
-                                        </div>
-                                    </div>
+            <div class="text-start flex-grow-1">
+
+                <div class="fw-bold small">
+                    {{ $item['nama_barang'] }}
+                </div>
+
+                <div class="badge bg-info mt-1">
+                    Stok: {{ $item['stok'] }}
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+                                    @endforeach
                                 </div>
 
+                            </div>
                         </div>
-                        @endforeach
                     </div>
 
                 </div>

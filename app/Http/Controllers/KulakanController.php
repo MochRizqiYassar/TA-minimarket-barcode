@@ -43,12 +43,12 @@ class KulakanController extends Controller
         // 🔥 TARUH DI SINI (SEBELUM TRANSACTION)
         $ocrResults = [];
 
-if ($request->hasFile('nota_image')) {
-    $path = $request->file('nota_image')->store('nota', 'public');
-    $fullPath = storage_path('app/public/' . $path);
+        if ($request->hasFile('nota_image')) {
+            $path = $request->file('nota_image')->store('nota', 'public');
+            $fullPath = storage_path('app/public/' . $path);
 
-    $ocrResults = $ocrService->process($fullPath);
-}
+            $text = $ocrService->process($fullPath);
+        }
 
         // 🔥 BARU SIMPAN KE DATABASE
         DB::transaction(function () use ($request, $ocrResults) {
@@ -229,9 +229,9 @@ if ($request->hasFile('nota_image')) {
         return redirect()->route('kulakan.index')->with('success', 'Kulakan berhasil dihapus.');
     }
     public function ocr(Request $request, OcrService $ocrService)
-{
-    return response()->json(
-        $ocrService->handleUpload($request)
-    );
-}
+    {
+        return response()->json(
+            $ocrService->handleUpload($request)
+        );
+    }
 }

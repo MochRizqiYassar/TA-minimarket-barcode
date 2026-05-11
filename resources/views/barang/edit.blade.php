@@ -59,6 +59,19 @@
 
             {{-- FOTO BARU --}}
             <input type="file" name="foto" class="form-control mb-2">
+            <div class="mb-2">
+    <label>Stok Minimum Etalase</label>
+    <input type="number" name="stok_minimum_etalase"
+        value="{{ old('stok_minimum_etalase', $barang->stok_minimum_etalase) }}"
+        class="form-control" required>
+</div>
+
+<div class="mb-2">
+    <label>Stok Minimum Gudang</label>
+    <input type="number" name="stok_minimum_gudang"
+        value="{{ old('stok_minimum_gudang', $barang->stok_minimum_gudang) }}"
+        class="form-control" required>
+</div>
 
             <button class="btn btn-success">Update</button>
         </form>
