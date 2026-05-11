@@ -28,9 +28,8 @@ public function reject($id)
 {
     $user = User::findOrFail($id);
 
-    $user->status = 'rejected';
-    $user->save();
+    $user->delete();
 
-    return back()->with('success', 'Akun berhasil ditolak');
+    return back()->with('success', 'Akun berhasil dihapus');
 }
 }

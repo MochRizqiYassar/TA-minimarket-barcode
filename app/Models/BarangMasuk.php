@@ -18,7 +18,6 @@ class BarangMasuk extends Model
         'tanggal_expired',
         'nama_barang',
         'harga_beli',
-        'status',
         'barcode',
     ];
 
@@ -36,4 +35,37 @@ class BarangMasuk extends Model
     {
         return $this->belongsTo(Kulakan::class, 'id_kulakan', 'id_kulakan');
     }
+    public function getSisaHariExpiredAttribute()
+{
+    if (!$this->tanggal_expired) {
+        return null;
+    }
+
+    return now()->diffInDays(
+        $this->tanggal_expired,
+        false
+    );
+}
+public function getStatusExpiredAttribute()
+{
+    if (!$this->tanggal_expired) {
+        return 'aman';
+    }
+
+    $sisaHari = $this->sisa_hari_expired;
+
+    if ($sisaHari <= 0) {
+        return 'expired';
+    }
+
+    if ($sisaHari <= 14) {
+        return 'kritis';
+    }
+
+    if ($sisaHari <= 30) {
+        return 'warning';
+    }
+
+    return 'aman';
+}
 }

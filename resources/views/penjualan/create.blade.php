@@ -4,7 +4,7 @@
     <div class="container-fluid">
         <h4>Penjualan</h4>
 
-        <form action="{{ route('penjualan.store') }}" method="POST">
+        <form id="form-penjualan">
             @csrf
 
             <input type="hidden" name="tanggal_penjualan" value="{{ date('Y-m-d') }}">
@@ -46,17 +46,22 @@
 
                         <input type="text" id="search" class="form-control mb-3" placeholder="Cari produk...">
 
-                        <div class="row" id="product-list">
+                        <div class="row product-list-scroll" id="product-list">
                             @foreach ($barangs as $b)
                                 <div class="col-md-6 mb-3 product-item" data-id="{{ $b->id_barang }}"
                                     data-nama="{{ $b->nama_barang }}" data-harga="{{ $b->harga_jual }}"
                                     data-stok="{{ $b->stok }}" data-barcode="{{ $b->barcode }}">
 
-                                    <div class="card p-2 text-center product-card"
+                                    <div class="card p-2 text-center product-card h-100"
                                         style="cursor:pointer;
      @if ($b->stok == 0) opacity:0.5; pointer-events:none; @endif">
                                         <img src="{{ $b->foto ? asset('storage/' . $b->foto) : asset('assets/images/no-image.png') }}"
-                                            height="80">
+                                            class="img-fluid rounded mb-2"
+                                            style="
+        height:120px;
+        width:100%;
+        object-fit:cover;
+    ">
 
                                         <small>{{ $b->nama_barang }}</small>
 
@@ -79,7 +84,15 @@
     </div>
 
     <script>
-        let cart = [];
+        let cart = JSON.parse(localStorage.getItem('draft_cart')) || [];
+
+        function saveCart() {
+
+            localStorage.setItem(
+                'draft_cart',
+                JSON.stringify(cart)
+            );
+        }
 
         function renderCart() {
             let body = document.getElementById('cart-body');
@@ -114,6 +127,7 @@
             }));
 
             document.getElementById('details-json').value = JSON.stringify(details);
+            saveCart();
         }
 
         function addToCart(id, nama, harga, stok) {
@@ -179,10 +193,15 @@
         });
 
         // reset
-        document.getElementById('reset').addEventListener('click', () => {
-            cart = [];
-            renderCart();
-        });
+        document.getElementById('reset')
+            .addEventListener('click', () => {
+
+                cart = [];
+
+                localStorage.removeItem('draft_cart');
+
+                renderCart();
+            });
 
         // search
         document.getElementById('search').addEventListener('keyup', function() {
@@ -215,40 +234,269 @@
         });
 
         function handleScan(barcode) {
-    let items = [];
+            let items = [];
 
-    document.querySelectorAll('.product-item').forEach(el => {
-        if (el.dataset.barcode == barcode) {
-            items.push(el);
+            document.querySelectorAll('.product-item').forEach(el => {
+                if (el.dataset.barcode == barcode) {
+                    items.push(el);
+                }
+            });
+
+            if (items.length === 1) {
+                let el = items[0];
+                addToCart(
+                    el.dataset.id,
+                    el.dataset.nama,
+                    parseInt(el.dataset.harga),
+                    parseInt(el.dataset.stok)
+                );
+
+            } else if (items.length > 1) {
+                let pilihan = items.map((el, i) => `${i+1}. ${el.dataset.nama}`).join('\n');
+                let pilih = prompt("Pilih barang:\n" + pilihan);
+
+                let index = parseInt(pilih) - 1;
+
+                if (items[index]) {
+                    let el = items[index];
+                    addToCart(
+                        el.dataset.id,
+                        el.dataset.nama,
+                        parseInt(el.dataset.harga),
+                        parseInt(el.dataset.stok)
+                    );
+                }
+
+            } else {
+                alert('Barcode tidak ditemukan!');
+            }
         }
-    });
+        document.getElementById('form-penjualan')
+.addEventListener('submit', async function(e) {
 
-    if (items.length === 1) {
-        let el = items[0];
-        addToCart(
-            el.dataset.id,
-            el.dataset.nama,
-            parseInt(el.dataset.stok)
+    e.preventDefault();
+
+    if (cart.length === 0) {
+        alert('Keranjang kosong!');
+        return;
+    }
+
+    const data = {
+
+        tanggal_penjualan:
+            new Date().toISOString().split('T')[0],
+
+        details: cart.map(item => ({
+            id_barang: item.id,
+            jumlah: item.qty
+        }))
+    };
+
+    try {
+
+        console.log('COBA KIRIM ONLINE');
+
+        const response = await fetch('/penjualan', {
+
+            method: 'POST',
+
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN':
+                    document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+
+            body: JSON.stringify({
+                tanggal_penjualan: data.tanggal_penjualan,
+                details_json: JSON.stringify(data.details)
+            })
+        });
+
+        // kalau sukses server
+        if (response.ok) {
+
+            const result = await response.json();
+
+            if (result.success) {
+
+                alert('Penjualan berhasil');
+
+                cart = [];
+
+                localStorage.removeItem('draft_cart');
+
+                renderCart();
+
+                window.location.href = "/penjualan";
+
+                return;
+            }
+        }
+
+        throw new Error('SERVER ERROR');
+
+    } catch (error) {
+
+        console.log('MASUK MODE OFFLINE');
+
+        // ===== SAVE OFFLINE =====
+
+        let offlinePenjualans =
+            JSON.parse(localStorage.getItem('offline_penjualans')) || [];
+
+        let total = 0;
+
+        cart.forEach(item => {
+            total += item.harga * item.qty;
+        });
+
+        const transaksiBaru = {
+
+            offline_id: Date.now(),
+
+            tanggal_penjualan: data.tanggal_penjualan,
+
+            details: data.details,
+
+            total_harga: total,
+
+            offline: true,
+
+            synced: false,
+        };
+
+        offlinePenjualans.push(transaksiBaru);
+
+        localStorage.setItem(
+            'offline_penjualans',
+            JSON.stringify(offlinePenjualans)
         );
 
-    } else if (items.length > 1) {
-        let pilihan = items.map((el, i) => `${i+1}. ${el.dataset.nama}`).join('\n');
-        let pilih = prompt("Pilih barang:\n" + pilihan);
+        console.log(
+            'HASIL LOCAL:',
+            localStorage.getItem('offline_penjualans')
+        );
 
-        let index = parseInt(pilih) - 1;
+        alert('Transaksi disimpan offline');
 
-        if (items[index]) {
-            let el = items[index];
-            addToCart(
-                el.dataset.id,
-                el.dataset.nama,
-                parseInt(el.dataset.stok)
+        cart = [];
+
+        localStorage.removeItem('draft_cart');
+
+        renderCart();
+
+        setTimeout(() => {
+
+            window.location.href = "/penjualan";
+
+        }, 1000);
+    }
+});
+        renderCart();
+        async function saveOfflinePenjualan(data) {
+
+            try {
+
+                let offlinePenjualans =
+                    JSON.parse(localStorage.getItem('offline_penjualans')) || [];
+
+                // hitung total
+                let total = 0;
+
+                cart.forEach(item => {
+                    total += item.harga * item.qty;
+                });
+
+                const transaksiBaru = {
+                    offline_id: Date.now(),
+                    tanggal_penjualan: data.tanggal_penjualan,
+                    details: data.details,
+                    total_harga: total,
+                    offline: true,
+                    synced: false,
+                };
+
+                offlinePenjualans.push(transaksiBaru);
+
+                localStorage.setItem(
+                    'offline_penjualans',
+                    JSON.stringify(offlinePenjualans)
+                );
+
+                console.log(
+                    'HASIL SAVE:',
+                    localStorage.getItem('offline_penjualans')
+                );
+
+                // reset cart
+                cart = [];
+
+                localStorage.removeItem('draft_cart');
+
+                renderCart();
+
+                alert('Penjualan disimpan offline');
+
+                // delay supaya localStorage benar-benar tersimpan
+                setTimeout(() => {
+
+                    window.location.href = "/penjualan";
+
+                }, 500);
+
+            } catch (e) {
+
+                console.error('GAGAL SAVE OFFLINE:', e);
+            }
+        }
+        window.addEventListener('online', syncOfflinePenjualan);
+
+        async function syncOfflinePenjualan() {
+
+            let offlinePenjualans =
+                JSON.parse(localStorage.getItem('offline_penjualans')) || [];
+
+            if (offlinePenjualans.length === 0) return;
+
+            for (const trx of offlinePenjualans) {
+
+                try {
+
+                    const response = await fetch('/penjualan', {
+
+                        method: 'POST',
+
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+
+                        body: JSON.stringify({
+                            tanggal_penjualan: trx.tanggal_penjualan,
+                            details_json: JSON.stringify(trx.details)
+                        })
+                    });
+
+                    if (response.ok) {
+
+                        trx.synced = true;
+                    }
+
+                } catch (e) {
+
+                    console.error(e);
+                }
+            }
+
+            offlinePenjualans =
+                offlinePenjualans.filter(t => !t.synced);
+
+            localStorage.setItem(
+                'offline_penjualans',
+                JSON.stringify(offlinePenjualans)
             );
         }
-
-    } else {
-        alert('Barcode tidak ditemukan!');
-    }
-}
     </script>
 @endsection

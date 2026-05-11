@@ -28,6 +28,15 @@
             <input type="number" name="harga_jual" placeholder="Harga Jual" class="form-control mb-2" required>
 
             <input type="file" name="foto" class="form-control mb-2">
+            <div class="mb-3">
+                <label>Stok Minimum Etalase</label>
+                <input type="number" name="stok_minimum_etalase" class="form-control" value="5" min="0">
+            </div>
+
+            <div class="mb-3">
+                <label>Stok Minimum Gudang</label>
+                <input type="number" name="stok_minimum_gudang" class="form-control" value="10" min="0">
+            </div>
 
             <button class="btn btn-success">Simpan</button>
         </form>

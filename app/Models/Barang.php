@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\DetailKulakan;
 
 class Barang extends Model
 {
@@ -19,7 +20,9 @@ class Barang extends Model
         'stok',
         'harga_beli',
         'harga_jual',
-        'foto'
+        'foto',
+        'stok_minimum_etalase',
+        'stok_minimum_gudang',
     ];
 
     public function kategori(): BelongsTo
@@ -46,4 +49,39 @@ class Barang extends Model
     {
         return $this->hasMany(DetailPenjualan::class, 'id_barang', 'id_barang');
     }
+    public function getStokGudangAttribute()
+{
+    return $this->detailKulakans()->sum('banyak');
+}
+public function getIsStokMenipisAttribute()
+{
+    return
+        $this->stok <= $this->stok_minimum_etalase
+        ||
+        $this->stok_gudang <= $this->stok_minimum_gudang;
+}
+public function getStatusEtalaseAttribute()
+{
+    if ($this->stok == 0) {
+        return 'habis';
+    }
+
+    if ($this->stok <= $this->stok_minimum_etalase) {
+        return 'menipis';
+    }
+
+    return 'aman';
+}
+public function getStatusGudangAttribute()
+{
+    if ($this->stok_gudang == 0) {
+        return 'habis';
+    }
+
+    if ($this->stok_gudang <= $this->stok_minimum_gudang) {
+        return 'menipis';
+    }
+
+    return 'aman';
+}
 }

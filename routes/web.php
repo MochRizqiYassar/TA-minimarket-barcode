@@ -46,7 +46,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users');
     Route::post('/admin/users/{id}/approve', [UserController::class, 'approve'])->name('admin.users.approve');
     Route::delete('/admin/users/{id}/reject', [UserController::class, 'reject'])
-    ->name('admin.users.reject');
+        ->name('admin.users.reject');
     Route::resource('kulakan', KulakanController::class);
     Route::post('kulakan/{kulakan}/approve', [KulakanController::class, 'approve'])->name('kulakan.approve');
     Route::post('/kulakan/ocr', [KulakanController::class, 'ocr'])->name('kulakan.ocr');
@@ -61,18 +61,18 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/barcode', [BarangController::class, 'generateBarcodeManual'])->name('barcode.generate');
 
     Route::get('/laporan/barang-masuk', [App\Http\Controllers\LaporanBarangMasukController::class, 'index'])
-    ->name('laporan.barang-masuk');
+        ->name('laporan.barang-masuk');
     Route::get('/laporan/barang-masuk/pdf', [App\Http\Controllers\LaporanBarangMasukController::class, 'exportPdf'])
-    ->name('laporan.barang-masuk.pdf');
+        ->name('laporan.barang-masuk.pdf');
     Route::get('/laporan/penjualan', [App\Http\Controllers\LaporanPenjualanController::class, 'index'])
-    ->name('laporan.penjualan');
-Route::get('/laporan/penjualan/pdf', [App\Http\Controllers\LaporanPenjualanController::class, 'exportPdf'])
-    ->name('laporan.penjualan.pdf');
+        ->name('laporan.penjualan');
+    Route::get('/laporan/penjualan/pdf', [App\Http\Controllers\LaporanPenjualanController::class, 'exportPdf'])
+        ->name('laporan.penjualan.pdf');
     Route::get('/laporan/barang-terlaris', [App\Http\Controllers\LaporanBarangTerlarisController::class, 'index'])
-    ->name('laporan.barang-terlaris');
+        ->name('laporan.barang-terlaris');
 
-Route::get('/laporan/barang-terlaris/pdf', [App\Http\Controllers\LaporanBarangTerlarisController::class, 'exportPdf'])
-    ->name('laporan.barang-terlaris.pdf');
+    Route::get('/laporan/barang-terlaris/pdf', [App\Http\Controllers\LaporanBarangTerlarisController::class, 'exportPdf'])
+        ->name('laporan.barang-terlaris.pdf');
 });
 
 Route::middleware(['auth', 'role:kasir'])->group(function () {
@@ -81,7 +81,7 @@ Route::middleware(['auth', 'role:kasir'])->group(function () {
     })->name('kasir.dashboard');
     Route::resource('penjualan', PenjualanController::class);
     Route::post('penjualan/{penjualan}/approve', [PenjualanController::class, 'approve'])
-    ->name('penjualan.approve');
+        ->name('penjualan.approve');
 });
 
 require __DIR__ . '/auth.php';
