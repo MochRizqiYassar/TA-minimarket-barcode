@@ -9,32 +9,31 @@ use Barryvdh\DomPDF\Facade\Pdf;
 class LaporanBarangMasukController extends Controller
 {
     public function index(Request $request)
-    {
-        $query = BarangMasuk::with('barang', 'kulakan.supplier')
-            ->where('status', 'approved');
+{
+    $query = BarangMasuk::with('barang', 'kulakan.supplier');
 
-        // FILTER TANGGAL
-        if ($request->tanggal_awal && $request->tanggal_akhir) {
-            $query->whereBetween('tanggal_masuk', [
-                $request->tanggal_awal,
-                $request->tanggal_akhir
-            ]);
-        }
+    // FILTER TANGGAL
+    if ($request->tanggal_awal && $request->tanggal_akhir) {
 
-        $laporans = $query->latest('tanggal_masuk')->get();
-
-        // TOTAL
-        $totalBarang = $laporans->sum('jumlah');
-
-        return view('laporan.barang-masuk', compact(
-            'laporans',
-            'totalBarang'
-        ));
+        $query->whereBetween('tanggal_masuk', [
+            $request->tanggal_awal,
+            $request->tanggal_akhir
+        ]);
     }
+
+    $laporans = $query->latest('tanggal_masuk')->get();
+
+    // TOTAL
+    $totalBarang = $laporans->sum('jumlah');
+
+    return view('laporan.barang-masuk', compact(
+        'laporans',
+        'totalBarang'
+    ));
+}
     public function exportPdf(Request $request)
 {
-    $query = BarangMasuk::with('barang', 'kulakan.supplier')
-        ->where('status', 'approved');
+    $query = BarangMasuk::with('barang', 'kulakan.supplier');
 
     // FILTER TANGGAL
     if ($request->tanggal_awal && $request->tanggal_akhir) {

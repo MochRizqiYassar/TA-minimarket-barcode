@@ -89,15 +89,15 @@ class PenjualanController extends Controller
 
         if ($request->expectsJson()) {
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Penjualan berhasil dicatat.'
-    ]);
-}
+            return response()->json([
+                'success' => true,
+                'message' => 'Penjualan berhasil dicatat.'
+            ]);
+        }
 
-return redirect()
-    ->route('penjualan.index')
-    ->with('success', 'Penjualan berhasil dicatat.');
+        return redirect()
+            ->route('penjualan.index')
+            ->with('success', 'Penjualan berhasil dicatat.');
     }
 
     public function show(Penjualan $penjualan)
@@ -181,14 +181,31 @@ return redirect()
     {
         DB::transaction(function () use ($penjualan) {
 
-            // 🔥 HANYA rollback jika sudah approved
+            // ambil detail fresh
+            $details = DetailPenjualan::where(
+                'id_penjualan',
+                $penjualan->id_penjualan
+            )->get();
+
+            // rollback stok jika approved
             if ($penjualan->status === 'approved') {
-                foreach ($penjualan->detailPenjualans as $detail) {
-                    $detail->barang->increment('stok', $detail->jumlah);
+
+                foreach ($details as $detail) {
+
+                    $barang = Barang::find($detail->id_barang);
+
+                    if ($barang) {
+                        $barang->stok += $detail->jumlah;
+                        $barang->save();
+                    }
                 }
             }
 
-            $penjualan->detailPenjualans()->delete();
+            DetailPenjualan::where(
+                'id_penjualan',
+                $penjualan->id_penjualan
+            )->delete();
+
             $penjualan->delete();
         });
 
@@ -205,7 +222,7 @@ return redirect()
         DB::transaction(function () use ($penjualan) {
 
             foreach ($penjualan->detailPenjualans as $detail) {
-                $barang = $detail->barang;
+                $barang = Barang::find($detail->id_barang);
 
                 if ($barang->stok < $detail->jumlah) {
                     throw new \Exception("Stok {$barang->nama_barang} tidak cukup.");

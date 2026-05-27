@@ -1,84 +1,162 @@
 @csrf
 
-<div class="mb-3">
-    <label>Supplier</label>
-    <select name="id_supplier" class="form-control" required>
-        <option value="">-- pilih supplier --</option>
-        @foreach ($suppliers as $s)
-            <option value="{{ $s->id_supplier }}">
-                {{ $s->nama_supplier }}
-            </option>
-        @endforeach
-    </select>
-</div>
+<div class="card shadow-sm border-0">
+    <div class="card-body">
 
-<div class="mb-3">
-    <label>Tanggal</label>
-    <input type="date" name="tanggal_kulakan" class="form-control" required>
-</div>
+        {{-- SUPPLIER --}}
+        <div class="row mb-3">
 
-<div class="mb-3">
-    <label>Scan Nota (OCR)</label>
-    <input type="file" id="ocr-input" class="form-control" accept="image/*" capture="environment">
-</div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">
+                    Supplier
+                </label>
 
-<!-- 🔥 PREVIEW GAMBAR -->
-<div class="mb-3 text-center">
-    <img id="preview-img" style="max-width:200px; display:none;" class="mb-2"/>
-</div>
+                <select name="id_supplier" class="form-select" required>
+                    <option value="">
+                        -- pilih supplier --
+                    </option>
 
-<button type="button" id="btn-scan" class="btn btn-info mb-3">
-    📷 Scan Nota
-</button>
+                    @foreach ($suppliers as $s)
+                        <option value="{{ $s->id_supplier }}">
+                            {{ $s->nama_supplier }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
 
-<!-- 🔥 LOADING -->
-<div id="ocr-loading" style="display:none;" class="text-center my-3">
-    <div class="spinner-border text-primary"></div>
-    <p class="mt-2">Scanning nota... mohon tunggu</p>
-</div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">
+                    Tanggal
+                </label>
 
-<hr>
+                <input
+                    type="date"
+                    name="tanggal_kulakan"
+                    class="form-control"
+                    required
+                >
+            </div>
 
-<h5 class="mb-3">Detail Barang</h5>
+        </div>
 
-<div class="row fw-bold mb-2 text-center">
+        {{-- OCR --}}
+        <div class="card border-0 bg-light mb-4">
+            <div class="card-body">
 
-    <div class="col-md-4">
-        Nama Barang
+                <label class="form-label fw-bold">
+                    Scan Nota (OCR)
+                </label>
+
+                <div class="row align-items-end">
+
+                    <div class="col-md-8">
+                        <input
+                            type="file"
+                            id="ocr-input"
+                            class="form-control"
+                            accept="image/*"
+                            capture="environment"
+                        >
+                    </div>
+
+                    <div class="col-md-4 d-grid">
+                        <button
+                            type="button"
+                            id="btn-scan"
+                            class="btn btn-primary"
+                        >
+                            📷 Scan Nota
+                        </button>
+                    </div>
+
+                </div>
+
+                {{-- PREVIEW --}}
+                <div class="text-center mt-3">
+                    <img
+                        id="preview-img"
+                        class="img-fluid rounded shadow-sm"
+                        style="max-height:250px; display:none;"
+                    >
+                </div>
+
+                {{-- LOADING --}}
+                <div
+                    id="ocr-loading"
+                    style="display:none;"
+                    class="text-center mt-3"
+                >
+                    <div class="spinner-border text-primary"></div>
+
+                    <p class="mt-2 mb-0">
+                        Scanning nota... mohon tunggu
+                    </p>
+                </div>
+
+            </div>
+        </div>
+
+        {{-- DETAIL --}}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+
+            <h5 class="mb-0 fw-bold">
+                Detail Barang
+            </h5>
+
+            <button
+                type="button"
+                class="btn btn-success btn-sm"
+                onclick="addManualRow()"
+            >
+                + Tambah Barang
+            </button>
+
+        </div>
+
+        {{-- HEADER --}}
+        <div class="row fw-bold text-center border-bottom pb-2 mb-2 d-none d-md-flex">
+
+            <div class="col-md-3">
+                Nama Barang
+            </div>
+
+            <div class="col-md-2">
+                Tipe
+            </div>
+
+            <div class="col-md-2">
+                Jumlah
+            </div>
+
+            <div class="col-md-2">
+                Harga
+            </div>
+
+            <div class="col-md-1">
+                Aksi
+            </div>
+
+        </div>
+
+        {{-- DETAIL CONTAINER --}}
+        <div id="detail-container"></div>
+
+        {{-- SUBMIT --}}
+        <div class="mt-4 text-end">
+            <button type="submit" class="btn btn-primary px-4">
+                💾 Simpan
+            </button>
+        </div>
+
     </div>
-
-    <div class="col-md-2">
-        Tipe
-    </div>
-
-    <div class="col-md-2">
-        Jumlah
-    </div>
-
-    <div class="col-md-3">
-        Harga Satuan
-    </div>
-
-    <div class="col-md-1">
-        Aksi
-    </div>
-
 </div>
-
-<div id="detail-container"></div>
-
-<button type="submit" class="btn btn-success mt-3">
-    Simpan
-</button>
 
 <script>
 
-// 🔥 COUNTER INDEX GLOBAL
 let detailIndex = 0;
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    // 🔥 FIELD AWAL
     addManualRow();
     addManualRow();
     addManualRow();
@@ -90,7 +168,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     btn.addEventListener('click', async () => {
 
-        // 🔥 ANTI DOUBLE CLICK
         if (btn.disabled) return;
 
         if (!fileInput.files.length) {
@@ -100,7 +177,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const file = fileInput.files[0];
 
-        // 🔥 PREVIEW GAMBAR
         preview.src = URL.createObjectURL(file);
         preview.style.display = "block";
 
@@ -109,9 +185,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         try {
 
-            // 🔥 START LOADING
             btn.disabled = true;
-            btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Scanning...`;
+
+            btn.innerHTML = `
+                <span class="spinner-border spinner-border-sm"></span>
+                Scanning...
+            `;
 
             loading.style.display = "block";
 
@@ -125,8 +204,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const data = await res.json();
 
-            console.log("OCR RESULT:", data);
-
             if (!data.items || !Array.isArray(data.items)) {
                 alert("Response tidak valid");
                 return;
@@ -137,26 +214,31 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // 🔥 MASUKKAN HASIL OCR KE FORM
             fillDetailTable(data.items);
 
-            // 🔥 AUTO SELECT SUPPLIER
             if (data.supplier_id) {
-                const select = document.querySelector('[name="id_supplier"]');
-                select.value = data.supplier_id;
+                document.querySelector('[name="id_supplier"]').value =
+                    data.supplier_id;
             }
 
-            // 🔥 FEEDBACK SUKSES
-            loading.innerHTML = "✅ OCR selesai!";
+            loading.innerHTML = `
+                <div class="alert alert-success py-2">
+                    ✅ OCR selesai
+                </div>
+            `;
 
             setTimeout(() => {
+
                 loading.style.display = "none";
 
                 loading.innerHTML = `
                     <div class="spinner-border text-primary"></div>
-                    <p class="mt-2">Scanning nota... mohon tunggu</p>
+                    <p class="mt-2 mb-0">
+                        Scanning nota... mohon tunggu
+                    </p>
                 `;
-            }, 1000);
+
+            }, 1200);
 
         } catch (err) {
 
@@ -165,87 +247,104 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } finally {
 
-            // 🔥 STOP LOADING
             btn.disabled = false;
-            btn.innerHTML = "📷 Scan Nota";
+            btn.innerHTML = '📷 Scan Nota';
+
         }
+
     });
 
 });
 
-// 🔥 TAMBAH BARIS MANUAL
 function addManualRow(item = null) {
 
     const container = document.getElementById('detail-container');
 
     const namaBarang = item?.nama_barang ?? '';
-    const tipeBarang = item?.id_tipe_barang ?? '';
     const banyak = item?.banyak ?? 1;
     const harga = item?.harga_satuan ?? 0;
 
     const row = `
-    <div class="row mb-2 detail-row border rounded p-2">
+    <div class="detail-row card border-0 shadow-sm mb-3">
 
-        <div class="col-md-4">
-            <input
-                type="text"
-                name="details[${detailIndex}][nama_barang]"
-                class="form-control"
-                placeholder="Nama Barang"
-                value="${namaBarang}"
-                required
-            >
-        </div>
+        <div class="card-body">
 
-        <div class="col-md-2">
-            <select
-                name="details[${detailIndex}][id_tipe_barang]"
-                class="form-control"
-                required
-            >
-                <option value="">Tipe</option>
+            <div class="row g-2 align-items-center">
 
-                @foreach($tipeBarangs as $t)
-                    <option value="{{ $t->id_tipe_barang }}">
-                        {{ $t->nama_tipe }}
-                    </option>
-                @endforeach
+                <div class="col-md-3">
+    <select
+        name="details[${detailIndex}][id_barang]"
+        class="form-select"
+        required
+    >
+        <option value="">
+            Pilih Barang
+        </option>
 
-            </select>
-        </div>
+        @foreach ($barangs as $barang)
+            <option value="{{ $barang->id_barang }}">
+                {{ $barang->nama_barang }}
+            </option>
+        @endforeach
 
-        <div class="col-md-2">
-            <input
-                type="number"
-                name="details[${detailIndex}][banyak]"
-                class="form-control"
-                placeholder="Jumlah"
-                value="${banyak}"
-                min="1"
-                required
-            >
-        </div>
+    </select>
+</div>
 
-        <div class="col-md-3">
-            <input
-                type="number"
-                name="details[${detailIndex}][harga_satuan]"
-                class="form-control"
-                placeholder="Harga Satuan"
-                value="${harga}"
-                min="0"
-                required
-            >
-        </div>
+                <div class="col-md-2">
+                    <select
+                        name="details[${detailIndex}][id_tipe_barang]"
+                        class="form-select"
+                        required
+                    >
+                        <option value="">
+                            Pilih Tipe
+                        </option>
 
-        <div class="col-md-1">
-            <button
-                type="button"
-                class="btn btn-danger w-100"
-                onclick="this.closest('.detail-row').remove()"
-            >
-                X
-            </button>
+                        @foreach($tipeBarangs as $t)
+                            <option value="{{ $t->id_tipe_barang }}">
+                                {{ $t->nama_tipe }}
+                            </option>
+                        @endforeach
+
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <input
+                        type="number"
+                        name="details[${detailIndex}][banyak]"
+                        class="form-control"
+                        placeholder="Jumlah"
+                        value="${banyak}"
+                        min="1"
+                        required
+                    >
+                </div>
+
+                <div class="col-md-2">
+                    <input
+                        type="number"
+                        name="details[${detailIndex}][harga_satuan]"
+                        class="form-control"
+                        placeholder="Harga"
+                        value="${harga}"
+                        min="0"
+                        required
+                    >
+                </div>
+
+                <div class="col-md-1 d-grid">
+                    <button
+                        type="button"
+                        class="btn btn-danger"
+                        onclick="this.closest('.detail-row').remove()"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+            </div>
+
         </div>
 
     </div>
@@ -256,18 +355,14 @@ function addManualRow(item = null) {
     detailIndex++;
 }
 
-// 🔥 OCR AUTO MASUK KE INPUT MANUAL
 function fillDetailTable(items) {
 
     const container = document.getElementById('detail-container');
 
-    // 🔥 HAPUS FIELD LAMA
     container.innerHTML = '';
 
-    // 🔥 RESET INDEX
     detailIndex = 0;
 
-    // 🔥 ISI DARI OCR
     items.forEach((item) => {
         addManualRow(item);
     });
