@@ -20,22 +20,22 @@ class BarangMasukController extends Controller
     public function create()
     {
         $details = DetailKulakan::with('barang', 'kulakan')
-    ->where('banyak', '>', 0)
-    ->whereNotNull('id_barang')
-    ->get()
-            ->whereNotNull('id_barang') // 🔥 penting
+            ->where('banyak', '>', 0)
+            ->whereNotNull('id_barang')
             ->get()
             ->groupBy('id_barang')
             ->map(function ($group) {
 
                 $first = $group->first();
 
+                $barang = Barang::find($first->id_barang);
+
                 return [
                     'id_barang'   => $first->id_barang,
-                    'nama_barang' => $first->barang?->nama_barang ?? 'Barang sudah dihapus',
+                    'nama_barang' => $barang?->nama_barang ?? 'Barang sudah dihapus',
                     'stok'        => $group->sum('banyak'),
-                    'foto'        => $first->barang?->foto ?? null,
-                    'barcode'     => $first->barang?->barcode,
+                    'foto'        => $barang?->foto,
+                    'barcode'     => $barang?->barcode,
                 ];
             });
 
@@ -43,64 +43,64 @@ class BarangMasukController extends Controller
     }
 
     public function store(Request $request)
-{
-    DB::transaction(function () use ($request) {
+    {
+        DB::transaction(function () use ($request) {
 
-        $items = json_decode($request->details_json, true);
+            $items = json_decode($request->details_json, true);
 
-        if (!$items) {
-            throw new \Exception('Tidak ada barang dipilih!');
-        }
-
-        foreach ($items as $item) {
-
-            $jumlah = (int) $item['qty'];
-
-            if ($jumlah <= 0) continue;
-
-            $idBarang = $item['id'];
-
-            // Ambil detail kulakan FIFO
-            $details = DetailKulakan::where('id_barang', $idBarang)
-                ->where('banyak', '>', 0)
-                ->orderBy('created_at')
-                ->get();
-
-            foreach ($details as $detail) {
-
-                if ($jumlah <= 0) break;
-
-                $ambil = min($jumlah, $detail->banyak);
-
-                // SIMPAN BARANG MASUK
-                BarangMasuk::create([
-                    'id_barang' => $idBarang,
-                    'id_kulakan' => $detail->id_kulakan,
-                    'jumlah' => $ambil,
-                    'tanggal_masuk' => now(),
-                    'tanggal_expired' => $item['tanggal_expired'] ?? null,
-                    'nama_barang' => $detail->barang?->nama_barang ?? 'Barang lama',
-                    'harga_beli' => $detail->barang?->harga_beli ?? 0,
-                ]);
-
-                // 🔥 LANGSUNG KURANGI STOK KULAKAN
-                $detail->decrement('banyak', $ambil);
-
-                // 🔥 LANGSUNG TAMBAH STOK BARANG
-                $detail->barang->increment('stok', $ambil);
-
-                $jumlah -= $ambil;
+            if (!$items) {
+                throw new \Exception('Tidak ada barang dipilih!');
             }
 
-            if ($jumlah > 0) {
-                throw new \Exception('Stok kulakan tidak mencukupi!');
-            }
-        }
-    });
+            foreach ($items as $item) {
 
-    return redirect()->route('barang-masuk.index')
-        ->with('success', 'Barang berhasil masuk ke etalase');
-}
+                $jumlah = (int) $item['qty'];
+
+                if ($jumlah <= 0) continue;
+
+                $idBarang = $item['id'];
+
+                // Ambil detail kulakan FIFO
+                $details = DetailKulakan::where('id_barang', $idBarang)
+                    ->where('banyak', '>', 0)
+                    ->orderBy('created_at')
+                    ->get();
+
+                foreach ($details as $detail) {
+
+                    if ($jumlah <= 0) break;
+
+                    $ambil = min($jumlah, $detail->banyak);
+
+                    // SIMPAN BARANG MASUK
+                    BarangMasuk::create([
+                        'id_barang' => $idBarang,
+                        'id_kulakan' => $detail->id_kulakan,
+                        'jumlah' => $ambil,
+                        'tanggal_masuk' => now(),
+                        'tanggal_expired' => $item['tanggal_expired'] ?? null,
+                        'nama_barang' => $detail->barang?->nama_barang ?? 'Barang lama',
+                        'harga_beli' => $detail->barang?->harga_beli ?? 0,
+                    ]);
+
+                    // 🔥 LANGSUNG KURANGI STOK KULAKAN
+                    $detail->decrement('banyak', $ambil);
+
+                    // 🔥 LANGSUNG TAMBAH STOK BARANG
+                    $detail->barang->increment('stok', $ambil);
+
+                    $jumlah -= $ambil;
+                }
+
+                if ($jumlah > 0) {
+                    throw new \Exception('Stok kulakan tidak mencukupi!');
+                }
+            }
+        });
+
+        return redirect()->route('barang-masuk.index')
+            ->with('success', 'Barang berhasil masuk ke etalase');
+    }
 
     public function show(BarangMasuk $barangMasuk)
     {

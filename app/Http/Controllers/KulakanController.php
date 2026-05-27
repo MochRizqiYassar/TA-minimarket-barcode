@@ -7,10 +7,10 @@ use App\Models\Supplier;
 use App\Models\Barang;
 use App\Models\TipeBarang;
 use App\Models\DetailKulakan;
-use App\Models\BarangMasuk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\OcrService;
+use App\Models\BarangMasuk;
 
 class KulakanController extends Controller
 {
@@ -34,7 +34,7 @@ class KulakanController extends Controller
             'id_supplier'       => 'required|exists:supplier,id_supplier',
             'tanggal_kulakan'   => 'required|date',
             'details'           => 'required|array|min:1',
-            'details.*.id_barang' => 'nullable|exists:barang,id_barang',
+            'details.*.id_barang' => 'required|exists:barang,id_barang',
             'details.*.id_tipe_barang' => 'required|exists:tipe_barang,id_tipe_barang',
             'details.*.banyak'         => 'required|integer|min:1',
             'details.*.harga_satuan'   => 'required|numeric|min:0',
@@ -77,25 +77,10 @@ class KulakanController extends Controller
             ]);
 
             // 🔥 PAKAI $details (BUKAN $request->details)
-            foreach ($details as $detail) {
+            foreach ($details as $index => $detail) {
 
-                // 🔥 HANDLE 2 KONDISI (manual vs OCR)
-                if (isset($detail['id_barang'])) {
-                    // 👉 dari form manual
-                    $barang = Barang::find($detail['id_barang']);
-                } else {
-                    // 👉 dari OCR (BELUM ADA id_barang)
-                    $barang = Barang::firstOrCreate(
-                        ['nama_barang' => $detail['nama_barang']],
-                        [
-                            'barcode' => uniqid(),
-                            'id_kategori' => 1,
-                            'id_tipe_barang' => $detail['id_tipe_barang'],
-                            'harga_beli' => $detail['harga_satuan'],
-                            'harga_jual' => $detail['harga_satuan'] * 1.2,
-                        ]
-                    );
-                }
+                // 🔥 WAJIB ADA id_barang
+                $barang = Barang::findOrFail($detail['id_barang']);
 
                 $subtotal = $detail['banyak'] * $detail['harga_satuan'];
                 $totalHarga += $subtotal;
@@ -170,16 +155,7 @@ class KulakanController extends Controller
                 $totalHarga += $subtotal;
 
                 // 🔥 CEK / BUAT BARANG
-                $barang = Barang::firstOrCreate(
-                    ['nama_barang' => $detail['nama_barang']],
-                    [
-                        'barcode' => uniqid(),
-                        'id_kategori' => 1,
-                        'id_tipe_barang' => $detail['id_tipe_barang'],
-                        'harga_beli' => $detail['harga_satuan'],
-                        'harga_jual' => $detail['harga_satuan'] * 1.2,
-                    ]
-                );
+                $barang = Barang::findOrFail($detail['id_barang']);
 
                 $subtotal = $detail['banyak'] * $detail['harga_satuan'];
 

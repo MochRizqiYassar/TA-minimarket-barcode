@@ -35,8 +35,6 @@
         transform: scale(1.02);
     }
 
-    /* ===== SIDEBAR ===== */
-
     .sidebar-header {
         padding-bottom: 0.5rem !important;
     }
@@ -53,6 +51,42 @@
 
     .logo img {
         margin-bottom: -10px;
+    }
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table td,
+    .table th {
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .barcode-wrapper svg {
+        width: 140px !important;
+        height: 40px !important;
+    }
+
+    .card-table {
+        border-radius: 15px;
+    }
+
+    @media (max-width: 768px) {
+
+        .table td,
+        .table th {
+            font-size: 12px;
+            padding: 8px;
+        }
+
+        .barcode-wrapper svg {
+            width: 100px !important;
+        }
+
+        .aksi-btn {
+            padding: 4px 6px;
+        }
     }
 </style>
 </head>
@@ -165,6 +199,14 @@
                                 <i class="bi bi-bar-chart"></i>
 
                                 <span>Barang Terlaris</span>
+                            </a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="{{ route('barcode.form') }}" class="sidebar-link">
+
+                                <i class="bi bi-upc-scan"></i>
+
+                                <span>Cetak Barcode</span>
                             </a>
                         </li>
                         <li class="sidebar-item  ">
