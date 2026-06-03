@@ -21,41 +21,41 @@
     <meta name="theme-color" content="#0d6efd">
     <link rel="apple-touch-icon" href="/images/icons/icon-192.jpg">
     <style>
-    .product-list-scroll {
-        max-height: 70vh;
-        overflow-y: auto;
-        overflow-x: hidden;
-    }
+        .product-list-scroll {
+            max-height: 70vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
 
-    .product-item {
-        cursor: pointer;
-        transition: 0.2s;
-    }
+        .product-item {
+            cursor: pointer;
+            transition: 0.2s;
+        }
 
-    .product-item:hover {
-        transform: scale(1.02);
-    }
+        .product-item:hover {
+            transform: scale(1.02);
+        }
 
-    /* ===== SIDEBAR ===== */
+        /* ===== SIDEBAR ===== */
 
-    .sidebar-header {
-        padding-bottom: 0.5rem !important;
-    }
+        .sidebar-header {
+            padding-bottom: 0.5rem !important;
+        }
 
-    .sidebar-menu {
-        margin-top: -10px;
-    }
+        .sidebar-menu {
+            margin-top: -10px;
+        }
 
-    .sidebar-title {
-        margin-top: 0 !important;
-        margin-bottom: 10px !important;
-        padding-top: 0 !important;
-    }
+        .sidebar-title {
+            margin-top: 0 !important;
+            margin-bottom: 10px !important;
+            padding-top: 0 !important;
+        }
 
-    .logo img {
-        margin-bottom: -10px;
-    }
-</style>
+        .logo img {
+            margin-bottom: -10px;
+        }
+    </style>
 </head>
 <script>
     if ('serviceWorker' in navigator) {
@@ -88,37 +88,36 @@
                     <ul class="menu">
                         <li class="sidebar-title">Menu</li>
 
-                        <li class="sidebar-item active ">
+                        <li class="sidebar-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                             <a href="{{ route('dashboard') }}" class='sidebar-link'>
                                 <i class="bi bi-grid-fill"></i>
                                 <span>Dashboard</span>
                             </a>
                         </li>
-                        <li class="sidebar-item has-sub">
+
+                        <li class="sidebar-item has-sub {{ request()->routeIs('penjualan.*') ? 'active' : '' }}">
                             <a href="#" class='sidebar-link'>
                                 <i class="bi bi-stack"></i>
                                 <span>Data Penjualan</span>
                             </a>
-
                             <ul class="submenu">
-
-                                <li class="submenu-item">
+                                <li class="submenu-item {{ request()->routeIs('penjualan.*') ? 'active' : '' }}">
                                     <a href="{{ route('penjualan.index') }}">Penjualan</a>
                                 </li>
                             </ul>
                         </li>
-                        <li class="sidebar-item  ">
+
+                        <li class="sidebar-item">
                             <a href="{{ route('logout') }}" class='sidebar-link'
                                 onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                <i class="bi bi-cash"></i>
-                                <span>logout</span>
+                                <i class="bi bi-box-arrow-right"></i>
+                                <span>Logout</span>
                             </a>
                             <form id="logout-form" action="{{ route('logout') }}" method="POST"
                                 style="display: none;">
                                 @csrf
                             </form>
                         </li>
-
                     </ul>
                 </div>
                 <button class="sidebar-toggler btn x"><i data-feather="x"></i></button>
@@ -127,60 +126,56 @@
         <div id="main">
             <header class="mb-3 d-flex justify-content-between align-items-center">
 
-    <a href="#" class="burger-btn d-block d-xl-none">
-        <i class="bi bi-justify fs-3"></i>
-    </a>
+                <a href="#" class="burger-btn d-block d-xl-none">
+                    <i class="bi bi-justify fs-3"></i>
+                </a>
 
-    <!-- RIGHT HEADER -->
-    <div class="ms-auto d-flex align-items-center" style="gap: 2px;">
+                <!-- RIGHT HEADER -->
+                <div class="ms-auto d-flex align-items-center" style="gap: 2px;">
 
-        <!-- 👤 PROFILE -->
-        <div class="dropdown">
+                    <!-- 👤 PROFILE -->
+                    <div class="dropdown">
 
-            <button
-                class="btn border-0 shadow-none d-flex align-items-center justify-content-center"
-                type="button"
-                data-bs-toggle="dropdown"
-                style="width: 38px; height: 38px;">
+                        <button class="btn border-0 shadow-none d-flex align-items-center justify-content-center"
+                            type="button" data-bs-toggle="dropdown" style="width: 38px; height: 38px;">
 
-                <i class="bi bi-person-circle fs-4"></i>
-            </button>
+                            <i class="bi bi-person-circle fs-4"></i>
+                        </button>
 
-            <ul class="dropdown-menu dropdown-menu-end shadow">
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
 
-                <li class="dropdown-header">
-                    {{ auth()->user()->name ?? 'Kasir' }}
-                </li>
+                            <li class="dropdown-header">
+                                {{ auth()->user()->name ?? 'Kasir' }}
+                            </li>
 
-                <li>
-                    <a href="{{ route('profile.edit') }}" class="dropdown-item">
-                        <i class="bi bi-person me-2"></i>
-                        Profile
-                    </a>
-                </li>
+                            <li>
+                                <a href="{{ route('profile.edit') }}" class="dropdown-item">
+                                    <i class="bi bi-person me-2"></i>
+                                    Profile
+                                </a>
+                            </li>
 
-                <li>
-                    <hr class="dropdown-divider">
-                </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
 
-                <li>
-                    <a href="{{ route('logout') }}"
-                       class="dropdown-item text-danger"
-                       onclick="event.preventDefault();
+                            <li>
+                                <a href="{{ route('logout') }}" class="dropdown-item text-danger"
+                                    onclick="event.preventDefault();
                        document.getElementById('logout-form').submit();">
 
-                        <i class="bi bi-box-arrow-right me-2"></i>
-                        Logout
-                    </a>
-                </li>
+                                    <i class="bi bi-box-arrow-right me-2"></i>
+                                    Logout
+                                </a>
+                            </li>
 
-            </ul>
+                        </ul>
 
-        </div>
+                    </div>
 
-    </div>
+                </div>
 
-</header>
+            </header>
 
             <div class="page-heading">
                 <h3>@yield('title')</h3>
@@ -189,18 +184,6 @@
             <div class="page-content">
                 @yield('content')
             </div>
-
-            <footer>
-                <div class="footer clearfix mb-0 text-muted">
-                    <div class="float-start">
-                        <p>2021 &copy; Mazer</p>
-                    </div>
-                    <div class="float-end">
-                        <p>Crafted with <span class="text-danger"><i class="bi bi-heart"></i></span> by <a
-                                href="http://ahmadsaugi.com">A. Saugi</a></p>
-                    </div>
-                </div>
-            </footer>
         </div>
     </div>
     <script src="{{ asset('assets/vendors/perfect-scrollbar/perfect-scrollbar.min.js') }}"></script>
@@ -250,6 +233,16 @@
     <script src="/js/offline-db.js"></script>
 
     <script src="/js/offline-sync.js"></script>
+    <script>
+        document.querySelectorAll('.sidebar-item.has-sub.active').forEach(function(item) {
+            item.classList.add('open');
+            const submenu = item.querySelector('.submenu');
+            if (submenu) {
+                submenu.style.display = 'block';
+                submenu.style.maxHeight = submenu.scrollHeight + 'px';
+            }
+        });
+    </script>
 </body>
 
 </html>

@@ -11,6 +11,7 @@
         "intervention/image": "2.7",
         "laravel/framework": "^13.0",
         "laravel/tinker": "^3.0",
+        "livewire/livewire": "^4.3",
         "milon/barcode": "^13.1",
         "thiagoalessio/tesseract_ocr": "^2.13"
     },

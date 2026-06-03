@@ -58,12 +58,10 @@
                                     <td>
                                         {{ $loop->iteration }}
                                     </td>
-
                                     <!-- TANGGAL -->
                                     <td>
-                                        {{ $p->tanggal_penjualan }}
+                                        {{ \Carbon\Carbon::parse($p->tanggal_penjualan)->format('d/m/Y') }}
                                     </td>
-
                                     <!-- KASIR -->
                                     <td class="fw-semibold">
                                         {{ $p->user->name ?? '-' }}
