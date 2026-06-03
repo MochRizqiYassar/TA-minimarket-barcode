@@ -150,4 +150,10 @@ class BarangController extends Controller
 
         return $pdf->setPaper('A4')->stream('barcode.pdf');
     }
+    public function stokRealtime()
+{
+    return response()->json(
+        Barang::select('id_barang', 'stok')->get()
+    );
+}
 }

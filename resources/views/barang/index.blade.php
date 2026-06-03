@@ -76,7 +76,7 @@
                                                 <td>{{ $b->tipeBarang->nama_tipe }}</td>
 
                                                 <td>
-                                                    <span class="badge bg-success">
+                                                    <span id="stok-{{ $b->id_barang }}" class="badge bg-success">
                                                         {{ $b->stok }}
                                                     </span>
                                                 </td>

@@ -32,13 +32,13 @@ class BarangMasukTest extends TestCase
         $kulakan = Kulakan::factory()->create();
 
         DetailKulakan::create([
-    'id_barang' => $barang->id_barang,
-    'id_kulakan' => $kulakan->id_kulakan,
-    'id_tipe_barang' => 1,
-    'banyak' => 20,
-    'harga_satuan' => 1000,
-    'subtotal' => 20000,
-]);
+            'id_barang' => $barang->id_barang,
+            'id_kulakan' => $kulakan->id_kulakan,
+            'id_tipe_barang' => 1,
+            'banyak' => 20,
+            'harga_satuan' => 1000,
+            'subtotal' => 20000,
+        ]);
 
         $response = $this->actingAs($this->admin())
             ->post(route('barang-masuk.store'), [
@@ -64,13 +64,13 @@ class BarangMasukTest extends TestCase
         $kulakan = Kulakan::factory()->create();
 
         DetailKulakan::create([
-    'id_barang' => $barang->id_barang,
-    'id_kulakan' => $kulakan->id_kulakan,
-    'id_tipe_barang' => 1,
-    'banyak' => 2,
-    'harga_satuan' => 1000,
-    'subtotal' => 2000,
-]);
+            'id_barang' => $barang->id_barang,
+            'id_kulakan' => $kulakan->id_kulakan,
+            'id_tipe_barang' => 1,
+            'banyak' => 2,
+            'harga_satuan' => 1000,
+            'subtotal' => 2000,
+        ]);
 
         $this->withoutExceptionHandling();
 

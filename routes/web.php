@@ -51,6 +51,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('kulakan/{kulakan}/approve', [KulakanController::class, 'approve'])->name('kulakan.approve');
     Route::post('/kulakan/ocr', [KulakanController::class, 'ocr'])->name('kulakan.ocr');
     Route::resource('suppliers', SupplierController::class);
+    Route::get('/barang/stok-realtime', [BarangController::class, 'stokRealtime'])->name('barang.stok-realtime');
     Route::resource('barang', BarangController::class);
     Route::resource('barang-masuk', BarangMasukController::class);
     Route::post('barang-masuk/{barangMasuk}/approve', [BarangMasukController::class, 'approve'])

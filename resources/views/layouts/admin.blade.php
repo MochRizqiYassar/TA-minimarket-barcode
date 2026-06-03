@@ -19,76 +19,77 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#0d6efd">
     <link rel="apple-touch-icon" href="/images/icons/icon-192.jpg">
-<style>
-    .product-list-scroll {
-        max-height: 70vh;
-        overflow-y: auto;
-        overflow-x: hidden;
-    }
+    <style>
+        .product-list-scroll {
+            max-height: 70vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
 
-    .product-item {
-        cursor: pointer;
-        transition: 0.2s;
-    }
+        .product-item {
+            cursor: pointer;
+            transition: 0.2s;
+        }
 
-    .product-item:hover {
-        transform: scale(1.02);
-    }
+        .product-item:hover {
+            transform: scale(1.02);
+        }
 
-    .sidebar-header {
-        padding-bottom: 0.5rem !important;
-    }
+        .sidebar-header {
+            padding-bottom: 0.5rem !important;
+        }
 
-    .sidebar-menu {
-        margin-top: -10px;
-    }
+        .sidebar-menu {
+            margin-top: -10px;
+        }
 
-    .sidebar-title {
-        margin-top: 0 !important;
-        margin-bottom: 10px !important;
-        padding-top: 0 !important;
-    }
+        .sidebar-title {
+            margin-top: 0 !important;
+            margin-bottom: 10px !important;
+            padding-top: 0 !important;
+        }
 
-    .logo img {
-        margin-bottom: -10px;
-    }
-    .table-responsive {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
+        .logo img {
+            margin-bottom: -10px;
+        }
 
-    .table td,
-    .table th {
-        white-space: nowrap;
-        vertical-align: middle;
-    }
-
-    .barcode-wrapper svg {
-        width: 140px !important;
-        height: 40px !important;
-    }
-
-    .card-table {
-        border-radius: 15px;
-    }
-
-    @media (max-width: 768px) {
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
 
         .table td,
         .table th {
-            font-size: 12px;
-            padding: 8px;
+            white-space: nowrap;
+            vertical-align: middle;
         }
 
         .barcode-wrapper svg {
-            width: 100px !important;
+            width: 140px !important;
+            height: 40px !important;
         }
 
-        .aksi-btn {
-            padding: 4px 6px;
+        .card-table {
+            border-radius: 15px;
         }
-    }
-</style>
+
+        @media (max-width: 768px) {
+
+            .table td,
+            .table th {
+                font-size: 12px;
+                padding: 8px;
+            }
+
+            .barcode-wrapper svg {
+                width: 100px !important;
+            }
+
+            .aksi-btn {
+                padding: 4px 6px;
+            }
+        }
+    </style>
 </head>
 <script>
     if ('serviceWorker' in navigator) {
@@ -121,106 +122,98 @@
                     <ul class="menu">
                         <li class="sidebar-title">Menu</li>
 
-                        <li class="sidebar-item active ">
+                        <li class="sidebar-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                             <a href="{{ route('dashboard') }}" class='sidebar-link'>
                                 <i class="bi bi-grid-fill"></i>
                                 <span>Dashboard</span>
                             </a>
                         </li>
-                        <li class="sidebar-item has-sub">
+
+                        <li
+                            class="sidebar-item has-sub {{ request()->routeIs('kulakan.*', 'suppliers.*') ? 'active' : '' }}">
                             <a href="#" class='sidebar-link'>
                                 <i class="bi bi-stack"></i>
                                 <span>Data Kulakan</span>
                             </a>
-
                             <ul class="submenu">
-
-                                <li class="submenu-item">
+                                <li class="submenu-item {{ request()->routeIs('kulakan.*') ? 'active' : '' }}">
                                     <a href="{{ route('kulakan.index') }}">Kulakan</a>
                                 </li>
-
-                                <li class="submenu-item">
+                                <li class="submenu-item {{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
                                     <a href="{{ route('suppliers.index') }}">Supplier</a>
                                 </li>
-
                             </ul>
                         </li>
 
-                        <li class="sidebar-item  has-sub">
+                        <li
+                            class="sidebar-item has-sub {{ request()->routeIs('barang.*', 'barang-masuk.*', 'tipe-barang.*', 'kategoris.*') ? 'active' : '' }}">
                             <a href="#" class='sidebar-link'>
                                 <i class="bi bi-collection-fill"></i>
                                 <span>Data Barang</span>
                             </a>
                             <ul class="submenu">
-                                <li class="submenu-item">
+                                <li
+                                    class="submenu-item {{ request()->routeIs('barang.index', 'barang.create', 'barang.edit') ? 'active' : '' }}">
                                     <a href="{{ route('barang.index') }}">Barang</a>
                                 </li>
-
-                                <li class="submenu-item">
+                                <li class="submenu-item {{ request()->routeIs('barang-masuk.*') ? 'active' : '' }}">
                                     <a href="{{ route('barang-masuk.index') }}">Barang Masuk</a>
                                 </li>
-
-                                <li class="submenu-item">
+                                <li class="submenu-item {{ request()->routeIs('tipe-barang.*') ? 'active' : '' }}">
                                     <a href="{{ route('tipe-barang.index') }}">Tipe Barang</a>
                                 </li>
-
-                                <li class="submenu-item">
+                                <li class="submenu-item {{ request()->routeIs('kategoris.*') ? 'active' : '' }}">
                                     <a href="{{ route('kategoris.index') }}">Kategori</a>
                                 </li>
                             </ul>
                         </li>
 
-                        <li class="sidebar-item">
+                        <li class="sidebar-item {{ request()->routeIs('admin.users') ? 'active' : '' }}">
                             <a href="{{ route('admin.users') }}" class='sidebar-link'>
                                 <i class="bi bi-person-check"></i>
                                 <span>Verifikasi Akun</span>
                             </a>
                         </li>
 
-                        <li class="sidebar-item">
+                        <li class="sidebar-item {{ request()->routeIs('laporan.barang-masuk') ? 'active' : '' }}">
                             <a href="{{ route('laporan.barang-masuk') }}" class="sidebar-link">
-
                                 <i class="bi bi-file-earmark-text"></i>
-
                                 <span>Laporan Barang Masuk</span>
                             </a>
                         </li>
-                        <li class="sidebar-item">
+
+                        <li class="sidebar-item {{ request()->routeIs('laporan.penjualan') ? 'active' : '' }}">
                             <a href="{{ route('laporan.penjualan') }}" class="sidebar-link">
-
                                 <i class="bi bi-cash-stack"></i>
-
                                 <span>Laporan Penjualan</span>
                             </a>
                         </li>
-                        <li class="sidebar-item">
+
+                        <li class="sidebar-item {{ request()->routeIs('laporan.barang-terlaris') ? 'active' : '' }}">
                             <a href="{{ route('laporan.barang-terlaris') }}" class="sidebar-link">
-
                                 <i class="bi bi-bar-chart"></i>
-
                                 <span>Barang Terlaris</span>
                             </a>
                         </li>
-                        <li class="sidebar-item">
+
+                        <li class="sidebar-item {{ request()->routeIs('barcode.form') ? 'active' : '' }}">
                             <a href="{{ route('barcode.form') }}" class="sidebar-link">
-
                                 <i class="bi bi-upc-scan"></i>
-
                                 <span>Cetak Barcode</span>
                             </a>
                         </li>
-                        <li class="sidebar-item  ">
+
+                        <li class="sidebar-item">
                             <a href="{{ route('logout') }}" class='sidebar-link'
                                 onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                                 <i class="bi bi-cash"></i>
-                                <span>logout</span>
+                                <span>Logout</span>
                             </a>
                             <form id="logout-form" action="{{ route('logout') }}" method="POST"
                                 style="display: none;">
                                 @csrf
                             </form>
                         </li>
-
                     </ul>
                 </div>
                 <button class="sidebar-toggler btn x"><i data-feather="x"></i></button>
@@ -397,27 +390,68 @@
             <div class="page-content">
                 @yield('content')
             </div>
-
-            <footer>
-                <div class="footer clearfix mb-0 text-muted">
-                    <div class="float-start">
-                        <p>2021 &copy; Mazer</p>
-                    </div>
-                    <div class="float-end">
-                        <p>Crafted with <span class="text-danger"><i class="bi bi-heart"></i></span> by <a
-                                href="http://ahmadsaugi.com">A. Saugi</a></p>
-                    </div>
-                </div>
-            </footer>
         </div>
     </div>
     <script src="{{ asset('assets/vendors/perfect-scrollbar/perfect-scrollbar.min.js') }}"></script>
     <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
 
     <script src="{{ asset('assets/vendors/apexcharts/apexcharts.js') }}"></script>
-    <script src="{{ asset('assets/js/pages/dashboard.js') }}"></script>
+    @if (request()->routeIs('admin.dashboard') || request()->routeIs('kasir.dashboard'))
+        <script src="{{ asset('assets/js/pages/dashboard.js') }}"></script>
+    @endif
 
     <script src="{{ asset('assets/js/main.js') }}"></script>
+    <script>
+        // Paksa buka submenu yang parent-nya active setelah page load
+        document.querySelectorAll('.sidebar-item.has-sub.active').forEach(function(item) {
+            item.classList.add('open');
+            const submenu = item.querySelector('.submenu');
+            if (submenu) {
+                submenu.style.display = 'block';
+                submenu.style.maxHeight = submenu.scrollHeight + 'px';
+            }
+        });
+    </script>
+    <script>
+        setInterval(() => {
+
+            fetch('/barang/stok-realtime')
+                .then(async response => {
+
+                    console.log('Status:', response.status);
+
+                    const text = await response.text();
+
+                    console.log(text);
+
+                    return JSON.parse(text);
+                })
+                .then(data => {
+
+                    data.forEach(barang => {
+
+                        let stokElement =
+                            document.getElementById(
+                                'stok-' + barang.id_barang
+                            );
+
+                        if (stokElement) {
+
+                            stokElement.innerText =
+                                barang.stok;
+
+                            stokElement.className =
+                                barang.stok <= 5 ?
+                                'badge bg-danger' :
+                                'badge bg-success';
+                        }
+
+                    });
+
+                });
+
+        }, 2000);
+    </script>
 </body>
 
 </html>

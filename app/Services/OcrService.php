@@ -18,10 +18,16 @@ class OcrService
 
         $path = $request->file('nota_image')->store('nota', 'public');
         $fullPath = storage_path('app/public/' . $path);
-        $text = $this->process($fullPath); // ✅ STRING
+        $text = $this->process($fullPath);
+
+        // DEBUG OCR TEXT
+        Log::info($text);
 
         $supplier = $this->detectSupplier($text);
         $items = $this->parseFlexible($text);
+
+        // DEBUG HASIL OCR
+        Log::info($items);
 
         return [
             'items' => $items,
@@ -29,81 +35,169 @@ class OcrService
         ];
     }
     public function process($filePath)
-{
-    // 🔥 PREPROCESS IMAGE (LEBIH KUAT)
-    $image = Image::make($filePath)
-        ->greyscale()
-        ->contrast(80)
-        ->brightness(20)
-        ->sharpen(30)
-        ->resize(null, 1500, function ($constraint) {
-            $constraint->aspectRatio();
-        });
+    {
+        $image = Image::make($filePath)
+            ->greyscale()
+            ->contrast(70)
+            ->brightness(15)
+            ->sharpen(25)
+            ->resize(null, 1800, function ($constraint) {
+                $constraint->aspectRatio();
+            });
 
-    $processedPath = storage_path('app/public/nota/processed.jpg');
-    $image->save($processedPath);
+        $processedPath = storage_path(
+            'app/public/nota/' . uniqid() . '_processed.jpg'
+        );
 
-    // 🔥 SET PATH TESSERACT
-    putenv('TESSDATA_PREFIX=C:\Program Files\Tesseract-OCR\tessdata');
+        $image->save($processedPath);
 
-    // 🔥 OCR UPGRADE
-    $text = (new TesseractOCR($processedPath))
-        ->executable('C:\Program Files\Tesseract-OCR\tesseract.exe')
-        ->lang('eng+ind')
-        ->psm(4) // 🔥 lebih cocok untuk struk kolom
-        ->oem(1) // 🔥 engine LSTM (lebih akurat)
-        ->config('preserve_interword_spaces', '1') // 🔥 jaga spasi
-        ->config('tessedit_char_whitelist', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789., ')
-        ->run();
+        putenv('TESSDATA_PREFIX=C:\Program Files\Tesseract-OCR\tessdata');
 
-    Log::info($text);
+        $text = (new TesseractOCR($processedPath))
+            ->executable('C:\Program Files\Tesseract-OCR\tesseract.exe')
+            ->lang('eng+ind')
+            ->psm(4)
+            ->oem(1)
+            ->config('preserve_interword_spaces', '1')
+            ->run();
 
-    return $text;
-}
+        unlink($processedPath);
+
+        return $this->normalizeText($text);
+    }
+
+    private function normalizeText($text)
+    {
+        $text = strtoupper($text);
+
+        // normalisasi newline dulu
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
+
+        // hapus karakter aneh
+        $text = str_replace(
+            ['—', '«', '~', '*', '=', '©'],
+            ' ',
+            $text
+        );
+
+        // rapikan spasi TANPA menghapus newline
+        $lines = explode("\n", $text);
+
+        $cleanLines = [];
+
+        foreach ($lines as $line) {
+
+            $line = preg_replace('/[ \t]+/', ' ', $line);
+
+            $cleanLines[] = trim($line);
+        }
+
+        return implode("\n", $cleanLines);
+    }
 
     private function parseFlexible($text)
 {
-    $text = strtoupper($text);
     $lines = preg_split('/\r\n|\r|\n/', $text);
 
     $results = [];
 
     foreach ($lines as $line) {
+
         $line = trim($line);
-        if (empty($line)) continue;
 
-        if (preg_match('/(TOTAL|TUNAI|KEMBALI|PPN|JL|ALAMAT|INDOMARET|ALFAMART)/', $line)) continue;
-
-        preg_match_all('/\d+/', $line, $nums);
-        $numbers = $nums[0];
-
-        if (count($numbers) < 2) continue;
-
-        $total = (int) end($numbers);
-        $harga = (int) prev($numbers);
-
-        $qty = null;
-        foreach ($numbers as $n) {
-            if ($n <= 20) {
-                $qty = (int)$n;
-                break;
-            }
+        if (empty($line)) {
+            continue;
         }
 
-        if (!$qty || !$harga) continue;
+        Log::info("LINE OCR: " . $line);
 
-        $nama = preg_replace('/\d+/', '', $line);
-        $nama = preg_replace('/[^A-Z\s]/', '', $nama);
-        $nama = trim(preg_replace('/\s+/', ' ', $nama));
+        // skip header/footer
+        if (preg_match(
+            '/TOTAL|TUNAI|KEMBALI|PPN|DPP|LAYANAN|CALL|BELANJA|KONSUMEN/i',
+            $line
+        )) {
+            continue;
+        }
 
-        if (strlen($nama) < 3) continue;
+        // normalisasi karakter aneh
+        $line = str_replace(
+    ['—', '«', '~', '*', '=', '©', ':', '§'],
+    ' ',
+    $line
+);
 
-        $results[] = [
-            'nama_barang' => $nama,
-            'banyak' => $qty,
-            'harga_satuan' => $harga,
-            'id_tipe_barang' => 1,
-        ];
+        /*
+        FORMAT YANG DICARI:
+        NAMA QTY HARGA TOTAL
+
+        contoh:
+        NUTRI SARI JERUK 3 5500 16,500
+        */
+
+        if (preg_match(
+            '/^(.*?)\s+(\d{1,3})\s+([\d\.,]+)\s+([\d\.,]+)$/',
+            $line,
+            $match
+        )) {
+
+            $nama = trim($match[1]);
+
+            $qty = $this->fixNumber($match[2]);
+            $harga = $this->fixNumber($match[3]);
+            $total = $this->fixNumber($match[4]);
+
+            Log::info([
+                'nama' => $nama,
+                'qty' => $qty,
+                'harga' => $harga,
+                'total' => $total,
+            ]);
+
+            // validasi
+            if (
+    $qty <= 0 ||
+    $qty > 100 ||
+    $harga <= 0 ||
+    $total <= 0
+) {
+    continue;
+}
+
+// koreksi subtotal OCR
+$expectedTotal = $qty * $harga;
+
+// kalau selisih terlalu jauh
+if (abs($total - $expectedTotal) > 5000) {
+
+    Log::warning([
+        'TOTAL OCR SALAH' => $total,
+        'EXPECTED' => $expectedTotal,
+    ]);
+
+    $total = $expectedTotal;
+}
+
+            $barang = $this->findBarang($nama);
+
+            if (!$barang) {
+
+                Log::warning("BARANG TIDAK COCOK: " . $nama);
+
+                continue;
+            }
+
+            $results[] = [
+                'id_barang' => $barang->id_barang,
+                'nama_barang' => $barang->nama_barang,
+                'banyak' => $qty,
+                'harga_satuan' => $harga,
+                'subtotal' => $total,
+                'confidence' => $this->calculateConfidence(
+                    $nama,
+                    $barang->nama_barang
+                ),
+            ];
+        }
     }
 
     return $results;
@@ -137,5 +231,87 @@ class OcrService
 
         // 🔥 RETURN ID (PENTING)
         return $supplier->id_supplier;
+    }
+    private function findBarang($ocrName)
+{
+    $ocrName = strtoupper(trim($ocrName));
+
+    // normalisasi OCR umum
+    $ocrName = str_replace([
+        '0'
+    ], [
+        'O'
+    ], $ocrName);
+
+    $best = null;
+    $highest = 0;
+
+    $barangs = Barang::all();
+
+    foreach ($barangs as $barang) {
+
+    $dbName = strtoupper(trim($barang->nama_barang));
+
+    similar_text($ocrName, $dbName, $percent);
+
+    // bonus kalau mengandung kata sama
+    $this->similarWords($ocrName, $dbName, $percent);
+
+    if ($percent > $highest) {
+        $highest = $percent;
+        $best = $barang;
+    }
+}
+
+    Log::info([
+        'OCR' => $ocrName,
+        'MATCH' => $best?->nama_barang,
+        'CONFIDENCE' => $highest
+    ]);
+
+    if ($highest >= 40) {
+        return $best;
+    }
+
+    return null;
+}
+private function similarWords($a, $b, &$score)
+{
+    $wordsA = explode(' ', $a);
+    $wordsB = explode(' ', $b);
+
+    $same = array_intersect($wordsA, $wordsB);
+
+    $bonus = count($same) * 10;
+
+    $score += $bonus;
+
+    if ($score > 100) {
+        $score = 100;
+    }
+}
+    private function calculateConfidence($ocr, $db)
+    {
+        similar_text(
+            strtoupper($ocr),
+            strtoupper($db),
+            $percent
+        );
+
+        return round($percent);
+    }
+    private function fixNumber($value)
+    {
+        // OCR sering salah baca
+        $value = str_replace(
+            ['O', 'I', 'S'],
+            ['0', '1', '5'],
+            $value
+        );
+
+        // hapus simbol
+        $value = preg_replace('/[^0-9]/', '', $value);
+
+        return (int) $value;
     }
 }

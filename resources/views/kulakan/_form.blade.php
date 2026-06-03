@@ -29,12 +29,7 @@
                     Tanggal
                 </label>
 
-                <input
-                    type="date"
-                    name="tanggal_kulakan"
-                    class="form-control"
-                    required
-                >
+                <input type="date" name="tanggal_kulakan" class="form-control" required>
             </div>
 
         </div>
@@ -50,21 +45,12 @@
                 <div class="row align-items-end">
 
                     <div class="col-md-8">
-                        <input
-                            type="file"
-                            id="ocr-input"
-                            class="form-control"
-                            accept="image/*"
-                            capture="environment"
-                        >
+                        <input type="file" id="ocr-input" class="form-control" accept="image/*"
+                            capture="environment">
                     </div>
 
                     <div class="col-md-4 d-grid">
-                        <button
-                            type="button"
-                            id="btn-scan"
-                            class="btn btn-primary"
-                        >
+                        <button type="button" id="btn-scan" class="btn btn-primary">
                             📷 Scan Nota
                         </button>
                     </div>
@@ -73,19 +59,11 @@
 
                 {{-- PREVIEW --}}
                 <div class="text-center mt-3">
-                    <img
-                        id="preview-img"
-                        class="img-fluid rounded shadow-sm"
-                        style="max-height:250px; display:none;"
-                    >
+                    <img id="preview-img" class="img-fluid rounded shadow-sm" style="max-height:250px; display:none;">
                 </div>
 
                 {{-- LOADING --}}
-                <div
-                    id="ocr-loading"
-                    style="display:none;"
-                    class="text-center mt-3"
-                >
+                <div id="ocr-loading" style="display:none;" class="text-center mt-3">
                     <div class="spinner-border text-primary"></div>
 
                     <p class="mt-2 mb-0">
@@ -103,11 +81,7 @@
                 Detail Barang
             </h5>
 
-            <button
-                type="button"
-                class="btn btn-success btn-sm"
-                onclick="addManualRow()"
-            >
+            <button type="button" class="btn btn-success btn-sm" onclick="addManualRow()">
                 + Tambah Barang
             </button>
 
@@ -152,119 +126,125 @@
 </div>
 
 <script>
+    let detailIndex = 0;
 
-let detailIndex = 0;
+    document.addEventListener('DOMContentLoaded', function() {
 
-document.addEventListener('DOMContentLoaded', function () {
+        addManualRow();
+        addManualRow();
+        addManualRow();
 
-    addManualRow();
-    addManualRow();
-    addManualRow();
+        const btn = document.getElementById('btn-scan');
+        const loading = document.getElementById('ocr-loading');
+        const preview = document.getElementById('preview-img');
+        const fileInput = document.getElementById('ocr-input');
 
-    const btn = document.getElementById('btn-scan');
-    const loading = document.getElementById('ocr-loading');
-    const preview = document.getElementById('preview-img');
-    const fileInput = document.getElementById('ocr-input');
+        btn.addEventListener('click', async () => {
 
-    btn.addEventListener('click', async () => {
+            if (btn.disabled) return;
 
-        if (btn.disabled) return;
+            if (!fileInput.files.length) {
+                alert('Pilih foto dulu!');
+                return;
+            }
 
-        if (!fileInput.files.length) {
-            alert('Pilih foto dulu!');
-            return;
-        }
+            const file = fileInput.files[0];
 
-        const file = fileInput.files[0];
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = "block";
 
-        preview.src = URL.createObjectURL(file);
-        preview.style.display = "block";
+            const formData = new FormData();
+            formData.append('nota_image', file);
 
-        const formData = new FormData();
-        formData.append('nota_image', file);
+            try {
 
-        try {
+                btn.disabled = true;
 
-            btn.disabled = true;
-
-            btn.innerHTML = `
+                btn.innerHTML = `
                 <span class="spinner-border spinner-border-sm"></span>
                 Scanning...
             `;
 
-            loading.style.display = "block";
+                loading.style.display = "block";
 
-            const res = await fetch("{{ route('kulakan.ocr') }}", {
-                method: "POST",
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: formData
-            });
+                const res = await fetch("{{ route('kulakan.ocr') }}", {
+                    method: "POST",
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: formData
+                });
 
-            const data = await res.json();
+                const data = await res.json();
 
-            if (!data.items || !Array.isArray(data.items)) {
-                alert("Response tidak valid");
-                return;
-            }
+                if (!data.items || !Array.isArray(data.items)) {
+                    alert("Response tidak valid");
+                    return;
+                }
 
-            if (data.items.length === 0) {
-                alert("OCR berhasil, tapi data tidak terbaca");
-                return;
-            }
+                if (data.items.length === 0) {
 
-            fillDetailTable(data.items);
+                    console.log(data);
 
-            if (data.supplier_id) {
-                document.querySelector('[name="id_supplier"]').value =
-                    data.supplier_id;
-            }
+                    alert("OCR berhasil, tetapi tidak ada barang yang cocok dengan database");
 
-            loading.innerHTML = `
+                    return;
+                }
+
+                fillDetailTable(data.items);
+
+                if (data.supplier_id) {
+                    document.querySelector('[name="id_supplier"]').value =
+                        data.supplier_id;
+                }
+
+                loading.innerHTML = `
                 <div class="alert alert-success py-2">
                     ✅ OCR selesai
                 </div>
             `;
 
-            setTimeout(() => {
+                setTimeout(() => {
 
-                loading.style.display = "none";
+                    loading.style.display = "none";
 
-                loading.innerHTML = `
+                    loading.innerHTML = `
                     <div class="spinner-border text-primary"></div>
                     <p class="mt-2 mb-0">
                         Scanning nota... mohon tunggu
                     </p>
                 `;
 
-            }, 1200);
+                }, 1200);
 
-        } catch (err) {
+            } catch (err) {
 
-            console.error(err);
-            alert('OCR gagal (server error)');
+                console.error(err);
+                alert('OCR gagal (server error)');
 
-        } finally {
+            } finally {
 
-            btn.disabled = false;
-            btn.innerHTML = '📷 Scan Nota';
+                btn.disabled = false;
+                btn.innerHTML = '📷 Scan Nota';
 
-        }
+            }
+
+        });
 
     });
 
-});
+    function addManualRow(item = null) {
 
-function addManualRow(item = null) {
+        const container = document.getElementById('detail-container');
 
-    const container = document.getElementById('detail-container');
+        const namaBarang = item?.nama_barang ?? '';
+        const banyak = item?.banyak ?? 1;
+        const harga = item?.harga_satuan ?? 0;
 
-    const namaBarang = item?.nama_barang ?? '';
-    const banyak = item?.banyak ?? 1;
-    const harga = item?.harga_satuan ?? 0;
+        // AUTO SELECT BARANG
+        const selectedBarang = item?.id_barang ?? '';
 
-    const row = `
+        const row = `
     <div class="detail-row card border-0 shadow-sm mb-3">
 
         <div class="card-body">
@@ -272,23 +252,26 @@ function addManualRow(item = null) {
             <div class="row g-2 align-items-center">
 
                 <div class="col-md-3">
-    <select
-        name="details[${detailIndex}][id_barang]"
-        class="form-select"
-        required
-    >
-        <option value="">
-            Pilih Barang
-        </option>
+                    <select
+                        name="details[${detailIndex}][id_barang]"
+                        class="form-select"
+                        required
+                    >
+                        <option value="">
+                            Pilih Barang
+                        </option>
 
-        @foreach ($barangs as $barang)
-            <option value="{{ $barang->id_barang }}">
-                {{ $barang->nama_barang }}
-            </option>
-        @endforeach
+                        @foreach ($barangs as $barang)
+                            <option
+                                value="{{ $barang->id_barang }}"
+                                ${selectedBarang == "{{ $barang->id_barang }}" ? 'selected' : ''}
+                            >
+                                {{ $barang->nama_barang }}
+                            </option>
+                        @endforeach
 
-    </select>
-</div>
+                    </select>
+                </div>
 
                 <div class="col-md-2">
                     <select
@@ -300,7 +283,7 @@ function addManualRow(item = null) {
                             Pilih Tipe
                         </option>
 
-                        @foreach($tipeBarangs as $t)
+                        @foreach ($tipeBarangs as $t)
                             <option value="{{ $t->id_tipe_barang }}">
                                 {{ $t->nama_tipe }}
                             </option>
@@ -333,6 +316,19 @@ function addManualRow(item = null) {
                     >
                 </div>
 
+                {{-- CONFIDENCE OCR --}}
+                <div class="col-md-2">
+                    ${
+                        item?.confidence
+                        ? `
+                        <small class="text-success">
+                            OCR ${item.confidence}%
+                        </small>
+                        `
+                        : ''
+                    }
+                </div>
+
                 <div class="col-md-1 d-grid">
                     <button
                         type="button"
@@ -350,23 +346,22 @@ function addManualRow(item = null) {
     </div>
     `;
 
-    container.insertAdjacentHTML('beforeend', row);
+        container.insertAdjacentHTML('beforeend', row);
 
-    detailIndex++;
-}
+        detailIndex++;
+    }
 
-function fillDetailTable(items) {
+    function fillDetailTable(items) {
 
-    const container = document.getElementById('detail-container');
+        const container = document.getElementById('detail-container');
 
-    container.innerHTML = '';
+        container.innerHTML = '';
 
-    detailIndex = 0;
+        detailIndex = 0;
 
-    items.forEach((item) => {
-        addManualRow(item);
-    });
+        items.forEach((item) => {
+            addManualRow(item);
+        });
 
-}
-
+    }
 </script>

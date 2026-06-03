@@ -56,12 +56,10 @@
                                     <td class="fw-semibold">
                                         {{ $k->supplier->nama_supplier }}
                                     </td>
-
                                     <!-- TANGGAL -->
                                     <td>
-                                        {{ $k->tanggal_kulakan }}
+                                        {{ \Carbon\Carbon::parse($k->tanggal_kulakan)->format('d/m/Y') }}
                                     </td>
-
                                     <!-- STATUS -->
                                     <td>
                                         <span class="badge bg-{{ $k->status == 'approved' ? 'success' : 'warning' }}">
