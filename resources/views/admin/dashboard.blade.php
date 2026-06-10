@@ -75,7 +75,7 @@
     </div>
 
     <!-- STATISTIC -->
-    <div class="row g-4">
+    <div class="row g-4 align-items-stretch">
 
         <!-- TOTAL BARANG -->
         <div class="col-12 col-md-6 col-xl-3">
@@ -284,12 +284,14 @@
     border-radius:22px;
     padding:28px;
     display:flex;
+    flex-direction:row;
     align-items:center;
     gap:20px;
     box-shadow:0 5px 20px rgba(0,0,0,0.05);
     transition:0.3s;
     position:relative;
     overflow:hidden;
+    height:100%;
 }
 
 .retail-card:hover{
@@ -322,14 +324,15 @@
 }
 
 .retail-icon{
-    width:65px;
-    height:65px;
-    border-radius:18px;
+    width:44px;
+    height:44px;
+    border-radius:12px;
     display:flex;
     justify-content:center;
     align-items:center;
-    font-size:28px;
+    font-size:22px;
     color:white;
+    flex-shrink:0;
 }
 
 .retail-primary .retail-icon{

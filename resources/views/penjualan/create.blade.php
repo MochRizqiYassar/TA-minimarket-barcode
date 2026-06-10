@@ -132,7 +132,7 @@
 
         function addToCart(id, nama, harga, stok) {
             if (stok <= 0) {
-                alert('Stok habis!');
+                showPopup('danger', 'Stok habis!');
                 return;
             }
 
@@ -140,7 +140,7 @@
 
             if (item) {
                 if (item.qty >= stok) {
-                    alert('Stok tidak cukup!');
+                    showPopup('danger', 'Stok tidak mencukupi!');
                     return;
                 }
                 item.qty++;
@@ -162,7 +162,7 @@
             let newQty = item.qty + val;
 
             if (newQty > item.stok) {
-                alert('Stok tidak cukup!');
+                showPopup('danger', 'Stok tidak mencukupi!');
                 return;
             }
 
@@ -268,131 +268,121 @@
                 }
 
             } else {
-                alert('Barcode tidak ditemukan!');
+                showPopup('danger', 'Barcode tidak ditemukan!');
             }
         }
         document.getElementById('form-penjualan')
-.addEventListener('submit', async function(e) {
+            .addEventListener('submit', async function(e) {
 
-    e.preventDefault();
+                e.preventDefault();
 
-    if (cart.length === 0) {
-        alert('Keranjang kosong!');
-        return;
-    }
+                if (cart.length === 0) {
+                    showPopup('danger', 'Keranjang masih kosong!');
+                    return;
+                }
 
-    const data = {
+                const data = {
 
-        tanggal_penjualan:
-            new Date().toISOString().split('T')[0],
+                    tanggal_penjualan: new Date().toISOString().split('T')[0],
 
-        details: cart.map(item => ({
-            id_barang: item.id,
-            jumlah: item.qty
-        }))
-    };
+                    details: cart.map(item => ({
+                        id_barang: item.id,
+                        jumlah: item.qty
+                    }))
+                };
 
-    try {
+                try {
 
-        console.log('COBA KIRIM ONLINE');
+                    console.log('COBA KIRIM ONLINE');
 
-        const response = await fetch('/penjualan', {
+                    const response = await fetch('/penjualan', {
 
-            method: 'POST',
+                        method: 'POST',
 
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN':
-                    document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
 
-            body: JSON.stringify({
-                tanggal_penjualan: data.tanggal_penjualan,
-                details_json: JSON.stringify(data.details)
-            })
-        });
+                        body: JSON.stringify({
+                            tanggal_penjualan: data.tanggal_penjualan,
+                            details_json: JSON.stringify(data.details)
+                        })
+                    });
 
-        // kalau sukses server
-        if (response.ok) {
+                    // kalau sukses server
+                    if (response.ok) {
 
-            const result = await response.json();
+                        const result = await response.json();
 
-            if (result.success) {
+                        if (result.success) {
 
-                alert('Penjualan berhasil');
+                            showPopup('success', null, () => {
+                                cart = [];
+                                localStorage.removeItem('draft_cart');
+                                renderCart();
 
-                cart = [];
+                                window.location.href = "/penjualan";
+                            });
 
-                localStorage.removeItem('draft_cart');
+                            return;
+                        }
+                    }
 
-                renderCart();
+                    throw new Error('SERVER ERROR');
 
-                window.location.href = "/penjualan";
+                } catch (error) {
 
-                return;
-            }
-        }
+                    console.log('MASUK MODE OFFLINE');
 
-        throw new Error('SERVER ERROR');
+                    // ===== SAVE OFFLINE =====
 
-    } catch (error) {
+                    let offlinePenjualans =
+                        JSON.parse(localStorage.getItem('offline_penjualans')) || [];
 
-        console.log('MASUK MODE OFFLINE');
+                    let total = 0;
 
-        // ===== SAVE OFFLINE =====
+                    cart.forEach(item => {
+                        total += item.harga * item.qty;
+                    });
 
-        let offlinePenjualans =
-            JSON.parse(localStorage.getItem('offline_penjualans')) || [];
+                    const transaksiBaru = {
 
-        let total = 0;
+                        offline_id: Date.now(),
 
-        cart.forEach(item => {
-            total += item.harga * item.qty;
-        });
+                        tanggal_penjualan: data.tanggal_penjualan,
 
-        const transaksiBaru = {
+                        details: data.details,
 
-            offline_id: Date.now(),
+                        total_harga: total,
 
-            tanggal_penjualan: data.tanggal_penjualan,
+                        offline: true,
 
-            details: data.details,
+                        synced: false,
+                    };
 
-            total_harga: total,
+                    offlinePenjualans.push(transaksiBaru);
 
-            offline: true,
+                    localStorage.setItem(
+                        'offline_penjualans',
+                        JSON.stringify(offlinePenjualans)
+                    );
 
-            synced: false,
-        };
+                    console.log(
+                        'HASIL LOCAL:',
+                        localStorage.getItem('offline_penjualans')
+                    );
 
-        offlinePenjualans.push(transaksiBaru);
+                    showPopup('offline', null, () => {
+                        cart = [];
+                        localStorage.removeItem('draft_cart');
+                        renderCart();
 
-        localStorage.setItem(
-            'offline_penjualans',
-            JSON.stringify(offlinePenjualans)
-        );
-
-        console.log(
-            'HASIL LOCAL:',
-            localStorage.getItem('offline_penjualans')
-        );
-
-        alert('Transaksi disimpan offline');
-
-        cart = [];
-
-        localStorage.removeItem('draft_cart');
-
-        renderCart();
-
-        setTimeout(() => {
-
-            window.location.href = "/penjualan";
-
-        }, 1000);
-    }
-});
+                        window.location.href = "/penjualan";
+                    });
+                }
+            });
         renderCart();
         async function saveOfflinePenjualan(data) {
 
@@ -436,14 +426,9 @@
 
                 renderCart();
 
-                alert('Penjualan disimpan offline');
-
-                // delay supaya localStorage benar-benar tersimpan
-                setTimeout(() => {
-
+                showPopup('offline', null, () => {
                     window.location.href = "/penjualan";
-
-                }, 500);
+                });
 
             } catch (e) {
 
@@ -498,5 +483,104 @@
                 JSON.stringify(offlinePenjualans)
             );
         }
+        const popupConfigs = {
+            success: {
+                icon: '✓',
+                iconBg: '#eaf3de',
+                title: 'Penjualan Berhasil!',
+                msg: 'Penjualan telah berhasil dicatat ke server.',
+                badges: [{
+                    label: 'Online',
+                    color: '#3b6d11',
+                    bg: '#eaf3de'
+                }, {
+                    label: 'Tersimpan',
+                    color: '#3b6d11',
+                    bg: '#eaf3de'
+                }],
+                btnBg: '#3b6d11',
+                btnText: 'Oke, Lanjut'
+            },
+            offline: {
+                icon: '⚡',
+                iconBg: '#faeeda',
+                title: 'Disimpan Offline',
+                msg: 'Tidak ada koneksi. Penjualan tersimpan di perangkat dan akan otomatis tersinkron saat online.',
+                badges: [{
+                    label: 'Offline Mode',
+                    color: '#854f0b',
+                    bg: '#faeeda'
+                }, {
+                    label: 'Akan Disinkron',
+                    color: '#854f0b',
+                    bg: '#faeeda'
+                }],
+                btnBg: '#ba7517',
+                btnText: 'Oke, Mengerti'
+            },
+            danger: {
+                icon: '✕',
+                iconBg: '#fcebeb',
+                title: 'Penjualan Gagal',
+                msg: 'Terjadi kesalahan. Coba ulangi beberapa saat lagi.',
+                badges: [{
+                    label: 'Gagal',
+                    color: '#a32d2d',
+                    bg: '#fcebeb'
+                }],
+                btnBg: '#a32d2d',
+                btnText: 'Tutup'
+            }
+        };
+
+        function showPopup(type, customMsg, callback) {
+            const c = popupConfigs[type];
+            const overlay = document.getElementById('popup-overlay');
+            document.getElementById('popup-icon').style.background = c.iconBg;
+            document.getElementById('popup-icon').textContent = c.icon;
+            document.getElementById('popup-title').textContent = c.title;
+            document.getElementById('popup-msg').textContent = customMsg || c.msg;
+            document.getElementById('popup-btn').style.background = c.btnBg;
+            document.getElementById('popup-btn').textContent = c.btnText;
+            document.getElementById('popup-badges').innerHTML = c.badges
+                .map(b =>
+                    `<span style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:${b.bg};color:${b.color};">${b.label}</span>`
+                ).join('');
+
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'auto';
+            document.getElementById('popup-box').style.transform = 'scale(1)';
+
+            const close = () => {
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+                document.getElementById('popup-box').style.transform = 'scale(.85)';
+                if (callback) callback();
+            };
+            document.getElementById('popup-close').onclick = close;
+            document.getElementById('popup-btn').onclick = close;
+            overlay.onclick = e => {
+                if (e.target === overlay) close();
+            };
+        }
     </script>
+    <!-- POPUP COMPONENT -->
+    <div id="popup-overlay" role="dialog" aria-modal="true"
+        style="position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none;">
+        <div id="popup-box"
+            style="background:#fff;border-radius:20px;padding:2rem 2rem 1.5rem;max-width:360px;width:90%;text-align:center;position:relative;transform:scale(.85);transition:transform .25s;">
+            <button id="popup-close"
+                style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#888;">✕</button>
+            <div id="popup-icon"
+                style="width:90px;height:90px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:42px;background:#eaf3de;">
+                ✓</div>
+            <p id="popup-title" style="font-size:18px;font-weight:600;margin:0 0 .4rem;color:#1a1a1a;"></p>
+            <p id="popup-msg" style="font-size:14px;color:#666;margin:0 0 1.4rem;line-height:1.5;"></p>
+            <div id="popup-badges" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:1rem;">
+            </div>
+            <button id="popup-btn"
+                style="padding:.6rem 2rem;border-radius:10px;font-size:14px;font-weight:600;border:none;cursor:pointer;color:#fff;background:#3b6d11;">Oke,
+                Lanjut</button>
+        </div>
+    </div>
 @endsection
