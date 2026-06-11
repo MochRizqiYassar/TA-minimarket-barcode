@@ -12,7 +12,6 @@ use Illuminate\Support\Str;
 use Milon\Barcode\Facades\DNS1DFacade as DNS1D;
 use Barryvdh\DomPDF\Facade\Pdf;
 
-
 class BarangController extends Controller
 {
     public function index()
