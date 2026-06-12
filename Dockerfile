@@ -11,3 +11,5 @@ WORKDIR /var/www/html
 COPY . .
 
 RUN composer install --no-dev --optimize-autoloader
+
+EXPOSE 8080
