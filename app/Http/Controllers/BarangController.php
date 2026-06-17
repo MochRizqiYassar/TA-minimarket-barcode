@@ -16,7 +16,9 @@ class BarangController extends Controller
 {
     public function index()
     {
-        $barangs = Barang::with('kategori', 'tipeBarang')->paginate(10);
+        $barangs = Barang::with('kategori', 'tipeBarang')
+            ->latest('id_barang')
+            ->paginate(10);
         return view('barang.index', compact('barangs'));
     }
 
@@ -43,7 +45,7 @@ class BarangController extends Controller
         ]);
 
         $data = $request->except('foto');
-        
+
         if (empty($data['barcode'])) {
             $data['barcode'] = 'BRG-' . strtoupper(Str::random(8));
         }
