@@ -25,9 +25,7 @@ class BarangMasukController extends Controller
             ->get()
             ->groupBy('id_barang')
             ->map(function ($group) {
-
-                $first = $group->first();
-
+                $first  = $group->first();
                 $barang = Barang::find($first->id_barang);
 
                 return [
@@ -45,15 +43,13 @@ class BarangMasukController extends Controller
     public function store(Request $request)
     {
         DB::transaction(function () use ($request) {
-
             $items = json_decode($request->details_json, true);
 
-            if (!$items) {
+            if (!$items || count($items) === 0) {
                 throw new \Exception('Tidak ada barang dipilih!');
             }
 
             foreach ($items as $item) {
-
                 $jumlah = (int) $item['qty'];
 
                 if ($jumlah <= 0) continue;
@@ -67,27 +63,32 @@ class BarangMasukController extends Controller
                     ->get();
 
                 foreach ($details as $detail) {
-
                     if ($jumlah <= 0) break;
 
                     $ambil = min($jumlah, $detail->banyak);
 
-                    // SIMPAN BARANG MASUK
+                    // [FIX #6] Cek null sebelum akses relasi barang
+                    $barang = $detail->barang;
+
+                    if (!$barang) {
+                        throw new \Exception('Barang tidak ditemukan, mungkin sudah dihapus.');
+                    }
+
                     BarangMasuk::create([
-                        'id_barang' => $idBarang,
-                        'id_kulakan' => $detail->id_kulakan,
-                        'jumlah' => $ambil,
-                        'tanggal_masuk' => now(),
-                        'tanggal_expired' => $item['tanggal_expired'] ?? null,
-                        'nama_barang' => $detail->barang?->nama_barang ?? 'Barang lama',
-                        'harga_beli' => $detail->barang?->harga_beli ?? 0,
+                        'id_barang'        => $idBarang,
+                        'id_kulakan'       => $detail->id_kulakan,
+                        'jumlah'           => $ambil,
+                        'tanggal_masuk'    => now(),
+                        'tanggal_expired'  => $item['tanggal_expired'] ?? null,
+                        'nama_barang'      => $barang->nama_barang,
+                        'harga_beli'       => $barang->harga_beli,
                     ]);
 
-                    // 🔥 LANGSUNG KURANGI STOK KULAKAN
+                    // Kurangi stok gudang (detail_kulakan)
                     $detail->decrement('banyak', $ambil);
 
-                    // 🔥 LANGSUNG TAMBAH STOK BARANG
-                    $detail->barang->increment('stok', $ambil);
+                    // Tambah stok etalase
+                    $barang->increment('stok', $ambil);
 
                     $jumlah -= $ambil;
                 }
@@ -98,8 +99,7 @@ class BarangMasukController extends Controller
             }
         });
 
-        return redirect()->route('barang-masuk.index')
-            ->with('success', 'Barang berhasil masuk ke etalase');
+        return redirect()->route('barang-masuk.index')->with('success', 'Barang berhasil masuk ke etalase');
     }
 
     public function show(BarangMasuk $barangMasuk)
@@ -110,7 +110,24 @@ class BarangMasukController extends Controller
 
     public function destroy(BarangMasuk $barangMasuk)
     {
-        $barangMasuk->delete();
+        DB::transaction(function () use ($barangMasuk) {
+            // Kembalikan stok etalase dan gudang saat barang masuk dihapus
+            $barang = Barang::find($barangMasuk->id_barang);
+            if ($barang) {
+                $barang->decrement('stok', $barangMasuk->jumlah);
+            }
+
+            // Kembalikan banyak ke detail_kulakan terkait
+            $detail = \App\Models\DetailKulakan::where('id_kulakan', $barangMasuk->id_kulakan)
+                ->where('id_barang', $barangMasuk->id_barang)
+                ->first();
+            if ($detail) {
+                $detail->increment('banyak', $barangMasuk->jumlah);
+            }
+
+            $barangMasuk->delete();
+        });
+
         return redirect()->route('barang-masuk.index')->with('success', 'Barang masuk berhasil dihapus.');
     }
 }

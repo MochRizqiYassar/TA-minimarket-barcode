@@ -6,24 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('detail_kulakan', function (Blueprint $table) {
-            //
+            $table->string('nama_barang')->nullable()->after('subtotal');
+            $table->decimal('harga_satuan_snapshot', 15, 2)->nullable()->after('nama_barang');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('detail_kulakan', function (Blueprint $table) {
-    $table->string('nama_barang')->nullable();
-    $table->integer('harga_satuan_snapshot')->nullable();
-});
+            $table->dropColumn(['nama_barang', 'harga_satuan_snapshot']);
+        });
     }
 };

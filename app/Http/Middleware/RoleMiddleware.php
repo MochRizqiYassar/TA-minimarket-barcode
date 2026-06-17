@@ -9,21 +9,25 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RoleMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  Closure(Request): (Response)  $next
-     */
     public function handle($request, Closure $next, $role)
     {
-        // Jika belum login, redirect ke login
         if (!Auth::check()) {
             return redirect()->route('login');
         }
 
-        // Jika role tidak sesuai, redirect ke dashboard
-        // (dashboard akan redirect ke halaman yang benar sesuai role)
-        if (Auth::user()->role !== $role) {
+        $user = Auth::user();
+
+        if ($user->role === 'kasir' && $user->status !== 'active') {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->withErrors([
+                'email' => 'Akun Anda belum disetujui admin. Silakan tunggu konfirmasi.',
+            ]);
+        }
+
+        if ($user->role !== $role) {
             return redirect()->route('dashboard');
         }
 

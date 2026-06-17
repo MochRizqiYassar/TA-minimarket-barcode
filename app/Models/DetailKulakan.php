@@ -7,12 +7,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DetailKulakan extends Model
 {
-    protected $table = 'detail_kulakan';
+    protected $table      = 'detail_kulakan';
     protected $primaryKey = 'id_detail_kulakan';
 
+    // [FIX #9] Tambahkan kolom snapshot ke fillable agar mass assignment tidak diblokir
     protected $fillable = [
-        'id_kulakan', 'id_barang', 'id_tipe_barang',
-        'banyak', 'harga_satuan', 'subtotal',
+        'id_kulakan',
+        'id_barang',
+        'id_tipe_barang',
+        'banyak',
+        'harga_satuan',
+        'subtotal',
+        'nama_barang',
+        'harga_satuan_snapshot',
     ];
 
     public function kulakan(): BelongsTo

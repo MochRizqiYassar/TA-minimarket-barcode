@@ -8,70 +8,37 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class LaporanPenjualanController extends Controller
 {
-    public function index(Request $request)
+    private function buildQuery(Request $request)
     {
-        $query = Penjualan::with([
-            'user',
-            'detailPenjualans'
-        ])->where('status', 'approved');
+        $query = Penjualan::with(['user', 'detailPenjualans'])
+            ->where('status', 'approved');
 
-        // FILTER TANGGAL
-        if ($request->tanggal_awal && $request->tanggal_akhir) {
-
+        if ($request->filled('tanggal_awal') && $request->filled('tanggal_akhir')) {
             $query->whereBetween('tanggal_penjualan', [
                 $request->tanggal_awal,
-                $request->tanggal_akhir
+                $request->tanggal_akhir,
             ]);
         }
 
-        $laporans = $query->latest('tanggal_penjualan')->get();
+        return $query->latest('tanggal_penjualan')->get();
+    }
 
+    public function index(Request $request)
+    {
+        $laporans   = $this->buildQuery($request);
         $totalOmzet = $laporans->sum('total_harga');
+        $totalLaba  = $laporans->sum(fn($p) => $p->detailPenjualans->sum('total_laba'));
 
-        $totalLaba = $laporans->sum(function ($penjualan) {
-            return $penjualan->detailPenjualans->sum('total_laba');
-        });
-
-        return view('laporan.penjualan', compact(
-            'laporans',
-            'totalOmzet',
-            'totalLaba'
-        ));
+        return view('laporan.penjualan', compact('laporans', 'totalOmzet', 'totalLaba'));
     }
 
     public function exportPdf(Request $request)
     {
-        $query = Penjualan::with([
-            'user',
-            'detailPenjualans'
-        ])->where('status', 'approved');
-
-        // FILTER TANGGAL
-        if ($request->tanggal_awal && $request->tanggal_akhir) {
-
-            $query->whereBetween('tanggal_penjualan', [
-                $request->tanggal_awal,
-                $request->tanggal_akhir
-            ]);
-        }
-
-        $laporans = $query->latest('tanggal_penjualan')->get();
-
+        $laporans   = $this->buildQuery($request);
         $totalOmzet = $laporans->sum('total_harga');
+        $totalLaba  = $laporans->sum(fn($p) => $p->detailPenjualans->sum('total_laba'));
 
-        $totalLaba = $laporans->sum(function ($penjualan) {
-            return $penjualan->detailPenjualans->sum('total_laba');
-        });
-
-        $pdf = Pdf::loadView(
-            'laporan.pdf-penjualan',
-            compact(
-                'laporans',
-                'totalOmzet',
-                'totalLaba'
-            )
-        );
-
+        $pdf = Pdf::loadView('laporan.pdf-penjualan', compact('laporans', 'totalOmzet', 'totalLaba'));
         return $pdf->download('laporan-penjualan.pdf');
     }
 }

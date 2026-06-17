@@ -8,59 +8,36 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class LaporanBarangMasukController extends Controller
 {
+
+    private function buildQuery(Request $request)
+    {
+        $query = BarangMasuk::with('barang', 'kulakan.supplier');
+
+        if ($request->filled('tanggal_awal') && $request->filled('tanggal_akhir')) {
+            $query->whereBetween('tanggal_masuk', [
+                $request->tanggal_awal,
+                $request->tanggal_akhir,
+            ]);
+        }
+
+        return $query->latest('tanggal_masuk')->get();
+    }
+
     public function index(Request $request)
-{
-    $query = BarangMasuk::with('barang', 'kulakan.supplier');
+    {
+        $laporans    = $this->buildQuery($request);
+        $totalBarang = $laporans->sum('jumlah');
 
-    // FILTER TANGGAL
-    if ($request->tanggal_awal && $request->tanggal_akhir) {
-
-        $query->whereBetween('tanggal_masuk', [
-            $request->tanggal_awal,
-            $request->tanggal_akhir
-        ]);
+        return view('laporan.barang-masuk', compact('laporans', 'totalBarang'));
     }
 
-    $laporans = $query->latest('tanggal_masuk')->get();
-
-    // TOTAL
-    $totalBarang = $laporans->sum('jumlah');
-
-    return view('laporan.barang-masuk', compact(
-        'laporans',
-        'totalBarang'
-    ));
-}
     public function exportPdf(Request $request)
-{
-    $query = BarangMasuk::with('barang', 'kulakan.supplier');
+    {
+        $laporans     = $this->buildQuery($request);
+        $totalBarang  = $laporans->sum('jumlah');
+        $totalNominal = $laporans->sum(fn($item) => $item->jumlah * $item->harga_beli);
 
-    // FILTER TANGGAL
-    if ($request->tanggal_awal && $request->tanggal_akhir) {
-
-        $query->whereBetween('tanggal_masuk', [
-            $request->tanggal_awal,
-            $request->tanggal_akhir
-        ]);
+        $pdf = Pdf::loadView('laporan.pdf-barang-masuk', compact('laporans', 'totalBarang', 'totalNominal'));
+        return $pdf->download('laporan-barang-masuk.pdf');
     }
-
-    $laporans = $query->latest('tanggal_masuk')->get();
-
-    $totalBarang = $laporans->sum('jumlah');
-
-    $totalNominal = $laporans->sum(function ($item) {
-        return $item->jumlah * $item->harga_beli;
-    });
-
-    $pdf = Pdf::loadView(
-        'laporan.pdf-barang-masuk',
-        compact(
-            'laporans',
-            'totalBarang',
-            'totalNominal'
-        )
-    );
-
-    return $pdf->download('laporan-barang-masuk.pdf');
-}
 }

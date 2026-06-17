@@ -5,32 +5,29 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
-//
 
 class UserController extends Controller
 {
+    public function index()
+    {
+        $users = User::where('role', 'kasir')->orderBy('created_at', 'desc')->get();
+        return view('admin.users.index', compact('users'));
+    }
 
-public function index()
-{
-    $users = User::where('role', 'kasir')->get();
-    return view('admin.users.index', compact('users'));
-}
+    public function approve($id)
+    {
+        $user = User::findOrFail($id);
+        $user->status = 'active';
+        $user->save();
 
-public function approve($id)
-{
-    $user = User::findOrFail($id);
+        return back()->with('success', 'Akun berhasil disetujui.');
+    }
 
-    $user->status = 'active';
-    $user->save();
+    public function reject($id)
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
 
-    return back()->with('success', 'Akun berhasil disetujui');
-}
-public function reject($id)
-{
-    $user = User::findOrFail($id);
-
-    $user->delete();
-
-    return back()->with('success', 'Akun berhasil dihapus');
-}
+        return back()->with('success', 'Akun berhasil dihapus.');
+    }
 }

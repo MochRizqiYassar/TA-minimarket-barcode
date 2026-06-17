@@ -25,12 +25,6 @@ class PenjualanController extends Controller
 
     public function store(Request $request)
     {
-        if ($request->expectsJson()) {
-
-            $request->merge([
-                'details_json' => $request->details_json
-            ]);
-        }
         $request->validate([
             'tanggal_penjualan' => 'required|date',
             'details_json'      => 'required|json',
@@ -38,8 +32,12 @@ class PenjualanController extends Controller
 
         $details = json_decode($request->details_json, true);
 
+        // [FIX #2] Validasi sebelum masuk transaksi, kembalikan response yang rapi
         if (!$details || count($details) === 0) {
-            throw new \Exception('Tidak ada barang dipilih!');
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Tidak ada barang dipilih!'], 422);
+            }
+            return back()->withErrors(['details_json' => 'Tidak ada barang dipilih!']);
         }
 
         DB::transaction(function () use ($request, $details) {
@@ -49,7 +47,7 @@ class PenjualanController extends Controller
                 'tanggal_penjualan' => $request->tanggal_penjualan,
                 'id_user'           => Auth::id(),
                 'total_harga'       => 0,
-                'status' => 'pending',
+                'status'            => 'pending',
             ]);
 
             foreach ($details as $detail) {
@@ -77,10 +75,8 @@ class PenjualanController extends Controller
                     'subtotal'                  => $subtotal,
                     'laba_satuan'               => $labaSatuan,
                     'total_laba'                => $totalLaba,
-
-                    // 🔥 snapshot
-                    'nama_barang' => $barang->nama_barang,
-                    'harga_snapshot' => $harga,
+                    'nama_barang'               => $barang->nama_barang,
+                    'harga_snapshot'            => $harga,
                 ]);
             }
 
@@ -88,16 +84,10 @@ class PenjualanController extends Controller
         });
 
         if ($request->expectsJson()) {
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Penjualan berhasil dicatat.'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Penjualan berhasil dicatat.']);
         }
 
-        return redirect()
-            ->route('penjualan.index')
-            ->with('success', 'Penjualan berhasil dicatat.');
+        return redirect()->route('penjualan.index')->with('success', 'Penjualan berhasil dicatat.');
     }
 
     public function show(Penjualan $penjualan)
@@ -132,27 +122,36 @@ class PenjualanController extends Controller
         ]);
 
         DB::transaction(function () use ($request, $penjualan) {
+            $details = $penjualan->detailPenjualans()->get();
 
-            // ❌ TIDAK ADA rollback stok lagi
+            // [FIX #7] Kembalikan stok barang lama sebelum detail dihapus
+            if ($penjualan->status === 'approved') {
+                foreach ($details as $detail) {
+                    $barang = Barang::find($detail->id_barang);
+                    if ($barang) {
+                        $barang->increment('stok', $detail->jumlah);
+                    }
+                }
+            }
 
             $penjualan->detailPenjualans()->delete();
 
             $penjualan->update([
-                'tanggal_penjualan' => $request->tanggal_penjualan
+                'tanggal_penjualan' => $request->tanggal_penjualan,
+                'status'            => 'pending', // reset ke pending setelah edit
             ]);
 
             $totalHarga = 0;
 
             foreach ($request->details as $detail) {
-
                 $barang = Barang::findOrFail($detail['id_barang']);
 
-                $harga       = $barang->harga_jual;
-                $hargaBeli   = $barang->harga_beli;
-                $jumlah      = $detail['jumlah'];
-                $subtotal    = $harga * $jumlah;
-                $labaSatuan  = $harga - $hargaBeli;
-                $totalLaba   = $labaSatuan * $jumlah;
+                $harga      = $barang->harga_jual;
+                $hargaBeli  = $barang->harga_beli;
+                $jumlah     = $detail['jumlah'];
+                $subtotal   = $harga * $jumlah;
+                $labaSatuan = $harga - $hargaBeli;
+                $totalLaba  = $labaSatuan * $jumlah;
 
                 $totalHarga += $subtotal;
 
@@ -165,35 +164,25 @@ class PenjualanController extends Controller
                     'subtotal'                  => $subtotal,
                     'laba_satuan'               => $labaSatuan,
                     'total_laba'                => $totalLaba,
-                    'nama_barang' => $barang->nama_barang,
-                    'harga_snapshot' => $harga,
+                    'nama_barang'               => $barang->nama_barang,
+                    'harga_snapshot'            => $harga,
                 ]);
             }
 
             $penjualan->update(['total_harga' => $totalHarga]);
         });
 
-        return redirect()->route('penjualan.index')
-            ->with('success', 'Penjualan berhasil diperbarui.');
+        return redirect()->route('penjualan.index')->with('success', 'Penjualan berhasil diperbarui.');
     }
 
     public function destroy(Penjualan $penjualan)
     {
         DB::transaction(function () use ($penjualan) {
+            $details = DetailPenjualan::where('id_penjualan', $penjualan->id_penjualan)->get();
 
-            // ambil detail fresh
-            $details = DetailPenjualan::where(
-                'id_penjualan',
-                $penjualan->id_penjualan
-            )->get();
-
-            // rollback stok jika approved
             if ($penjualan->status === 'approved') {
-
                 foreach ($details as $detail) {
-
                     $barang = Barang::find($detail->id_barang);
-
                     if ($barang) {
                         $barang->stok += $detail->jumlah;
                         $barang->save();
@@ -201,16 +190,11 @@ class PenjualanController extends Controller
                 }
             }
 
-            DetailPenjualan::where(
-                'id_penjualan',
-                $penjualan->id_penjualan
-            )->delete();
-
+            DetailPenjualan::where('id_penjualan', $penjualan->id_penjualan)->delete();
             $penjualan->delete();
         });
 
-        return redirect()->route('penjualan.index')
-            ->with('success', 'Penjualan berhasil dihapus.');
+        return redirect()->route('penjualan.index')->with('success', 'Penjualan berhasil dihapus.');
     }
 
     public function approve(Penjualan $penjualan)
@@ -220,9 +204,12 @@ class PenjualanController extends Controller
         }
 
         DB::transaction(function () use ($penjualan) {
-
             foreach ($penjualan->detailPenjualans as $detail) {
                 $barang = Barang::find($detail->id_barang);
+
+                if (!$barang) {
+                    throw new \Exception("Barang tidak ditemukan.");
+                }
 
                 if ($barang->stok < $detail->jumlah) {
                     throw new \Exception("Stok {$barang->nama_barang} tidak cukup.");
@@ -231,9 +218,7 @@ class PenjualanController extends Controller
                 $barang->decrement('stok', $detail->jumlah);
             }
 
-            $penjualan->update([
-                'status' => 'approved'
-            ]);
+            $penjualan->update(['status' => 'approved']);
         });
 
         return back()->with('success', 'Penjualan berhasil diapprove');
