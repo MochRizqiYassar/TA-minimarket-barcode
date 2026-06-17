@@ -4,6 +4,22 @@
     <div class="container-fluid px-2 px-md-4">
         <h2>Data Barang</h2>
 
+        @if (session('success'))
+            <div class="alert alert-success">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <a href="{{ route('barang.create') }}" class="btn btn-primary mb-3">+ Tambah Barang</a>
 
         <div class="container-fluid">
