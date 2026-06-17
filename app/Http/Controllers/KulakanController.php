@@ -86,14 +86,12 @@ class KulakanController extends Controller
                 $totalHarga += $subtotal;
 
                 DetailKulakan::create([
-                    'id_kulakan'            => $kulakan->id_kulakan,
-                    'id_barang'             => $barang->id_barang,
-                    'id_tipe_barang'        => $detail['id_tipe_barang'],
-                    'banyak'                => $detail['banyak'],
-                    'harga_satuan'          => $detail['harga_satuan'],
-                    'subtotal'              => $subtotal,
-                    'nama_barang'           => $barang->nama_barang,
-                    'harga_satuan_snapshot' => $detail['harga_satuan'],
+                    'id_kulakan'     => $kulakan->id_kulakan,
+                    'id_barang'      => $barang->id_barang,
+                    'id_tipe_barang' => $detail['id_tipe_barang'],
+                    'banyak'         => $detail['banyak'],
+                    'harga_satuan'   => $detail['harga_satuan'],
+                    'subtotal'       => $subtotal,
                 ]);
             }
 
@@ -161,8 +159,6 @@ class KulakanController extends Controller
                     'banyak'                => $detail['banyak'],
                     'harga_satuan'          => $detail['harga_satuan'],
                     'subtotal'              => $subtotal,
-                    'nama_barang'           => $barang->nama_barang,
-                    'harga_satuan_snapshot' => $detail['harga_satuan'],
                 ]);
             }
 

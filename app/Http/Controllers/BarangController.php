@@ -43,7 +43,7 @@ class BarangController extends Controller
         ]);
 
         $data = $request->except('foto');
-        // AUTO GENERATE BARCODE JIKA KOSONG
+        
         if (empty($data['barcode'])) {
             $data['barcode'] = 'BRG-' . strtoupper(Str::random(8));
         }
