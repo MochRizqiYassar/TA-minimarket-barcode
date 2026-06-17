@@ -113,10 +113,6 @@
                                 <i class="bi bi-box-arrow-right"></i>
                                 <span>Logout</span>
                             </a>
-                            <form id="logout-form" action="{{ route('logout') }}" method="POST"
-                                style="display: none;">
-                                @csrf
-                            </form>
                         </li>
                     </ul>
                 </div>
@@ -186,6 +182,11 @@
             </div>
         </div>
     </div>
+    {{-- Form logout satu tempat, dipakai semua tombol logout --}}
+    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+        @csrf
+    </form>
+
     <script src="{{ asset('assets/vendors/perfect-scrollbar/perfect-scrollbar.min.js') }}"></script>
     <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
 

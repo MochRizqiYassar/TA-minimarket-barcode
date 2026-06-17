@@ -17,47 +17,50 @@ class AuthenticatedSessionController extends Controller
     public function create(): View
     {
         return view('auth.login');
-
     }
 
     /**
      * Handle an incoming authentication request.
      */
     public function store(LoginRequest $request): RedirectResponse
-{
-    $request->authenticate();
+    {
+        $request->authenticate();
 
-    $request->session()->regenerate();
+        $request->session()->regenerate();
 
-    $user = Auth::user();
+        $user = Auth::user();
 
-if ($user->status === 'pending') {
+        // Cek status akun sebelum masuk
+        if ($user->status === 'pending') {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
-    Auth::logout();
+            return back()->withErrors([
+                'email' => 'Akun kamu masih menunggu persetujuan admin.',
+            ])->onlyInput('email');
+        }
 
-    return back()->withErrors([
-        'email' => 'Akun kamu masih menunggu persetujuan admin.',
-    ]);
-}
+        if ($user->status === 'rejected') {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
-if ($user->status === 'rejected') {
+            return back()->withErrors([
+                'email' => 'Akun kamu ditolak oleh admin.',
+            ])->onlyInput('email');
+        }
 
-    Auth::logout();
+        // Redirect berdasarkan role
+        if ($user->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        } elseif ($user->role === 'kasir') {
+            return redirect()->route('kasir.dashboard');
+        }
 
-    return back()->withErrors([
-        'email' => 'Akun kamu ditolak oleh admin.',
-    ]);
-}
-
-    // 🔥 REDIRECT BERDASARKAN ROLE
-    if ($user->role === 'admin') {
-        return redirect()->route('admin.dashboard');
-    } elseif ($user->role === 'kasir') {
-        return redirect()->route('kasir.dashboard');
-    } else {
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Fallback
+        return redirect()->route('dashboard');
     }
-}
 
     /**
      * Destroy an authenticated session.
@@ -70,7 +73,6 @@ if ($user->status === 'rejected') {
 
         $request->session()->regenerateToken();
 
-        return redirect('/');
-
+        return redirect()->route('login');
     }
 }
