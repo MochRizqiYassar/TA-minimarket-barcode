@@ -4,6 +4,12 @@ USER root
 
 RUN install-php-extensions gd
 
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    tesseract-ocr-ind \
+    libtesseract-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /var/www/html
 
 COPY . .
