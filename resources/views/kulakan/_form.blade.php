@@ -177,6 +177,12 @@
 
                 const data = await res.json();
 
+                if (data.error) {
+                    console.error('OCR server error:', data.error);
+                    alert("OCR gagal di server: " + data.error);
+                    return;
+                }
+
                 if (!data.items || !Array.isArray(data.items)) {
                     alert("Response tidak valid");
                     return;

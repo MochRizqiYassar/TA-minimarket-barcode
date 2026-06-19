@@ -206,6 +206,18 @@ class KulakanController extends Controller
 
     public function ocr(Request $request, OcrService $ocrService)
     {
-        return response()->json($ocrService->handleUpload($request));
+        try {
+            return response()->json($ocrService->handleUpload($request));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('OCR error: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+
+            return response()->json([
+                'items'       => [],
+                'supplier_id' => null,
+                'error'       => $e->getMessage(),
+            ], 500);
+        }
     }
 }
