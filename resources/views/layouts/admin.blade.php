@@ -93,8 +93,9 @@
 </head>
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-            .then(() => console.log('Service Worker Registered'));
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(reg => console.log('Service Worker Registered, scope:', reg.scope))
+            .catch(err => console.error('Service Worker gagal didaftarkan:', err));
     }
 </script>
 

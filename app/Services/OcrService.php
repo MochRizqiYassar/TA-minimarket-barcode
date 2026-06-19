@@ -54,9 +54,21 @@ class OcrService
         $processedPath = storage_path('app/public/nota/' . uniqid() . '_processed.jpg');
         $image->save($processedPath);
 
-        // [FIX #5] Path Tesseract dari environment variable, bukan hardcode Windows
-        $tesseractPath = env('TESSERACT_PATH', '/usr/bin/tesseract');
-        $tessdata      = env('TESSDATA_PREFIX', '/usr/share/tesseract-ocr/4.00/tessdata');
+        // [FIX] Default path mengikuti OS yang sedang berjalan, bukan hardcode Linux.
+        // Kalau TESSERACT_PATH / TESSDATA_PREFIX diisi di .env, nilai itu yang dipakai.
+        // Kalau tidak diisi, baru jatuh ke default sesuai OS (Windows vs Linux).
+        $isWindows = stripos(PHP_OS, 'WIN') === 0;
+
+        $defaultTesseract = $isWindows
+            ? 'C:/Program Files/Tesseract-OCR/tesseract.exe'
+            : '/usr/bin/tesseract';
+
+        $defaultTessdata = $isWindows
+            ? 'C:/Program Files/Tesseract-OCR/tessdata'
+            : '/usr/share/tesseract-ocr/4.00/tessdata';
+
+        $tesseractPath = env('TESSERACT_PATH', $defaultTesseract);
+        $tessdata      = env('TESSDATA_PREFIX', $defaultTessdata);
 
         putenv('TESSDATA_PREFIX=' . $tessdata);
 
@@ -64,12 +76,8 @@ class OcrService
             ->lang('eng+ind')
             ->psm(4)
             ->oem(1)
-            ->config('preserve_interword_spaces', '1');
-
-        // Hanya set executable jika TESSERACT_PATH dikonfigurasi secara eksplisit
-        if (env('TESSERACT_PATH')) {
-            $ocr->executable($tesseractPath);
-        }
+            ->config('preserve_interword_spaces', '1')
+            ->executable($tesseractPath);
 
         $text = $ocr->run();
 

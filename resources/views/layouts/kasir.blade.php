@@ -59,8 +59,9 @@
 </head>
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-            .then(() => console.log('Service Worker Registered'));
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(reg => console.log('Service Worker Registered, scope:', reg.scope))
+            .catch(err => console.error('Service Worker gagal didaftarkan:', err));
     }
 </script>
 
@@ -204,37 +205,107 @@
         border-radius: 8px;
         color: white;
         font-weight: bold;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
      ">
     </div>
+
+    <div id="sync-toast"
+        style="
+        position: fixed;
+        bottom: 70px;
+        right: 10px;
+        z-index: 9999;
+        padding: 10px 16px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        font-size: 13px;
+        background: #198754;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all .3s;
+        pointer-events: none;
+     "></div>
+
     <script>
-        function updateNetworkStatus() {
+        let pendingOfflineCount = 0;
+
+        function renderNetworkStatus() {
 
             const status = document.getElementById('network-status');
+            const online = navigator.onLine;
 
-            if (navigator.onLine) {
+            let html = online
+                ? '<span>🟢 Online</span>'
+                : '<span>🔴 Offline</span>';
 
-                status.innerHTML = '🟢 Online';
-
-                status.style.background = 'green';
-
-            } else {
-
-                status.innerHTML = '🔴 Offline';
-
-                status.style.background = 'red';
+            if (pendingOfflineCount > 0) {
+                html += `<span style="font-size:11px;background:#fff;color:#854f0b;border-radius:12px;padding:2px 10px;">
+                    ⚡ ${pendingOfflineCount} transaksi belum tersinkron
+                </span>`;
             }
+
+            status.innerHTML = html;
+            status.style.background = online ? 'green' : 'red';
         }
 
-        window.addEventListener('online', updateNetworkStatus);
+        function showSyncToast(message, bg) {
+            const toast = document.getElementById('sync-toast');
+            toast.textContent = message;
+            toast.style.background = bg || '#198754';
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
 
-        window.addEventListener('offline', updateNetworkStatus);
+            clearTimeout(window._syncToastTimer);
+            window._syncToastTimer = setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+            }, 3500);
+        }
 
-        updateNetworkStatus();
+        window.addEventListener('online', renderNetworkStatus);
+        window.addEventListener('offline', renderNetworkStatus);
+
+        // Dipicu oleh offline-sync.js setiap kali status sinkronisasi berubah.
+        // Inilah yang membuat badge dan notifikasi update otomatis tanpa
+        // perlu refresh halaman setelah koneksi kembali online.
+        window.addEventListener('penjualan-sync-update', function(e) {
+            const {
+                pending,
+                justSynced,
+                failed
+            } = e.detail;
+
+            pendingOfflineCount = pending;
+            renderNetworkStatus();
+
+            if (justSynced > 0) {
+                showSyncToast(`✓ ${justSynced} transaksi offline berhasil disinkronkan ke server`, '#198754');
+            } else if (failed > 0 && pending > 0) {
+                showSyncToast(`⚠ ${failed} transaksi gagal disinkronkan, akan dicoba lagi`, '#ba7517');
+            }
+        });
+
+        renderNetworkStatus();
     </script>
     <script src="/js/offline-db.js"></script>
 
     <script src="/js/offline-sync.js"></script>
     <script>
+        // Tampilkan jumlah pending begitu halaman dimuat (sebelum sync sempat jalan),
+        // supaya kasir langsung tahu ada transaksi tertunda dari sesi sebelumnya.
+        // Diletakkan SETELAH offline-db.js dimuat agar countOfflinePenjualan() tersedia.
+        if (typeof countOfflinePenjualan === 'function') {
+            countOfflinePenjualan().then(count => {
+                pendingOfflineCount = count;
+                renderNetworkStatus();
+            }).catch(() => {});
+        }
+
         document.querySelectorAll('.sidebar-item.has-sub.active').forEach(function(item) {
             item.classList.add('open');
             const submenu = item.querySelector('.submenu');

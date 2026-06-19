@@ -291,6 +291,19 @@
                     }))
                 };
 
+                let total = 0;
+                cart.forEach(item => {
+                    total += item.harga * item.qty;
+                });
+
+                // Kalau browser sudah tahu dirinya offline, langsung simpan ke
+                // antrian offline tanpa perlu mencoba fetch dulu (lebih cepat,
+                // dan menghindari delay menunggu network timeout).
+                if (!navigator.onLine) {
+                    await simpanKeAntrianOffline(data, total);
+                    return;
+                }
+
                 try {
 
                     console.log('COBA KIRIM ONLINE');
@@ -311,119 +324,56 @@
                         })
                     });
 
-                    // kalau sukses server
-                    if (response.ok) {
+                    // Request berhasil SAMPAI ke server (apapun isinya).
+                    // Ini bukan kegagalan koneksi, jadi harus ditangani sebagai
+                    // hasil dari server (sukses ATAU ditolak validasi),
+                    // BUKAN dilempar ke antrian offline.
+                    const result = await response.json().catch(() => null);
 
-                        const result = await response.json();
+                    if (response.ok && result && result.success) {
 
-                        if (result.success) {
+                        showPopup('success', null, () => {
+                            cart = [];
+                            localStorage.removeItem('draft_cart');
+                            renderCart();
 
-                            showPopup('success', null, () => {
-                                cart = [];
-                                localStorage.removeItem('draft_cart');
-                                renderCart();
+                            window.location.href = "/penjualan";
+                        });
 
-                                window.location.href = "/penjualan";
-                            });
-
-                            return;
-                        }
+                        return;
                     }
 
-                    throw new Error('SERVER ERROR');
+                    // Server menjawab tapi menolak (contoh: stok tidak cukup).
+                    // Tampilkan pesan aslinya, JANGAN disimpan sebagai offline,
+                    // karena ini bukan soal koneksi melainkan data yang invalid.
+                    showPopup('danger', (result && result.message) ||
+                        'Penjualan ditolak server. Periksa kembali data.');
 
                 } catch (error) {
 
-                    console.log('MASUK MODE OFFLINE');
+                    // Hanya masuk sini kalau fetch benar-benar gagal terkirim
+                    // (request error/network error) — artinya memang offline
+                    // atau server tidak terjangkau sama sekali.
+                    console.log('MASUK MODE OFFLINE:', error);
 
-                    // ===== SAVE OFFLINE =====
-
-                    let offlinePenjualans =
-                        JSON.parse(localStorage.getItem('offline_penjualans')) || [];
-
-                    let total = 0;
-
-                    cart.forEach(item => {
-                        total += item.harga * item.qty;
-                    });
-
-                    const transaksiBaru = {
-
-                        offline_id: Date.now(),
-
-                        tanggal_penjualan: data.tanggal_penjualan,
-
-                        details: data.details,
-
-                        total_harga: total,
-
-                        offline: true,
-
-                        synced: false,
-                    };
-
-                    offlinePenjualans.push(transaksiBaru);
-
-                    localStorage.setItem(
-                        'offline_penjualans',
-                        JSON.stringify(offlinePenjualans)
-                    );
-
-                    console.log(
-                        'HASIL LOCAL:',
-                        localStorage.getItem('offline_penjualans')
-                    );
-
-                    showPopup('offline', null, () => {
-                        cart = [];
-                        localStorage.removeItem('draft_cart');
-                        renderCart();
-
-                        window.location.href = "/penjualan";
-                    });
+                    await simpanKeAntrianOffline(data, total);
                 }
             });
         renderCart();
-        async function saveOfflinePenjualan(data) {
 
+        // Simpan transaksi ke antrian offline (IndexedDB, lihat offline-db.js).
+        // Ini SATU-SATUNYA tempat penyimpanan offline di seluruh aplikasi;
+        // sinkronisasinya ditangani otomatis oleh offline-sync.js.
+        async function simpanKeAntrianOffline(data, total) {
             try {
-
-                let offlinePenjualans =
-                    JSON.parse(localStorage.getItem('offline_penjualans')) || [];
-
-                // hitung total
-                let total = 0;
-
-                cart.forEach(item => {
-                    total += item.harga * item.qty;
-                });
-
-                const transaksiBaru = {
-                    offline_id: Date.now(),
+                await saveOfflinePenjualan({
                     tanggal_penjualan: data.tanggal_penjualan,
                     details: data.details,
                     total_harga: total,
-                    offline: true,
-                    synced: false,
-                };
+                });
 
-                offlinePenjualans.push(transaksiBaru);
-
-                localStorage.setItem(
-                    'offline_penjualans',
-                    JSON.stringify(offlinePenjualans)
-                );
-
-                console.log(
-                    'HASIL SAVE:',
-                    localStorage.getItem('offline_penjualans')
-                );
-
-                // reset cart
                 cart = [];
-
                 localStorage.removeItem('draft_cart');
-
                 renderCart();
 
                 showPopup('offline', null, () => {
@@ -431,57 +381,9 @@
                 });
 
             } catch (e) {
-
                 console.error('GAGAL SAVE OFFLINE:', e);
+                showPopup('danger', 'Gagal menyimpan transaksi secara offline di perangkat ini.');
             }
-        }
-        window.addEventListener('online', syncOfflinePenjualan);
-
-        async function syncOfflinePenjualan() {
-
-            let offlinePenjualans =
-                JSON.parse(localStorage.getItem('offline_penjualans')) || [];
-
-            if (offlinePenjualans.length === 0) return;
-
-            for (const trx of offlinePenjualans) {
-
-                try {
-
-                    const response = await fetch('/penjualan', {
-
-                        method: 'POST',
-
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                            'Accept': 'application/json'
-                        },
-
-                        body: JSON.stringify({
-                            tanggal_penjualan: trx.tanggal_penjualan,
-                            details_json: JSON.stringify(trx.details)
-                        })
-                    });
-
-                    if (response.ok) {
-
-                        trx.synced = true;
-                    }
-
-                } catch (e) {
-
-                    console.error(e);
-                }
-            }
-
-            offlinePenjualans =
-                offlinePenjualans.filter(t => !t.synced);
-
-            localStorage.setItem(
-                'offline_penjualans',
-                JSON.stringify(offlinePenjualans)
-            );
         }
         const popupConfigs = {
             success: {

@@ -18,7 +18,7 @@
                                     <th>Barang</th>
                                     <th>Stok Kulakan</th>
                                     <th>Qty</th>
-                                    <th>Expired</th>
+                                    <th>Expired (opsional)</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -197,13 +197,13 @@
         });
 
         document.querySelector('form').addEventListener('submit', function(e) {
-            for (let item of cart) {
-                if (!item.tanggal_expired) {
-                    alert('Tanggal expired harus diisi!');
-                    e.preventDefault();
-                    return;
-                }
+            if (cart.length === 0) {
+                alert('Pilih minimal satu barang!');
+                e.preventDefault();
+                return;
             }
+            // Tanggal expired bersifat opsional — beberapa barang
+            // (mis. galon, alat tulis, dll) memang tidak punya masa expired.
         });
 
         // reset
