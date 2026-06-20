@@ -55,15 +55,13 @@ class PenjualanTest extends TestCase
 
     public function test_penjualan_gagal_jika_tidak_ada_barang()
     {
-        $this->withoutExceptionHandling();
-
-        $this->expectException(\Exception::class);
-
-        $this->actingAs($this->admin())
+        $response = $this->actingAs($this->admin())
             ->post(route('penjualan.store'), [
                 'tanggal_penjualan' => now()->format('Y-m-d'),
                 'details_json' => json_encode([]),
             ]);
+
+        $response->assertSessionHasErrors('details_json');
     }
 
     public function test_penjualan_gagal_jika_stok_tidak_cukup()
