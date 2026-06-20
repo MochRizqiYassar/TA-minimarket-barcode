@@ -154,46 +154,64 @@
 
         <!-- SCRIPT OFFLINE -->
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
-
-                let offlinePenjualans =
-                    JSON.parse(localStorage.getItem('offline_penjualans')) || [];
+            async function renderOfflinePenjualans() {
+                if (typeof getOfflinePenjualan !== 'function') return;
 
                 let tbody = document.getElementById('penjualan-body');
 
-                offlinePenjualans.forEach((p, index) => {
+                tbody.querySelectorAll('.row-offline-pending').forEach(row => row.remove());
 
-                    tbody.innerHTML =
-                        `
-                    <tr style="background:#fff3cd;">
+                let offlinePenjualans = [];
+                try {
+                    offlinePenjualans = await getOfflinePenjualan();
+                } catch (e) {
+                    console.error('Gagal membaca data penjualan offline:', e);
+                    return;
+                }
 
-                        <td>OFFLINE</td>
+                if (offlinePenjualans.length === 0) return;
 
-                        <td>${p.tanggal_penjualan}</td>
-
-                        <td>Kasir</td>
-
+                let rowsHtml = offlinePenjualans
+                    .slice()
+                    .reverse()
+                    .map(p => `
+                    <tr class="row-offline-pending" style="background:#fff3cd;">
+                        <td><i class="bi bi-cloud-slash"></i></td>
+                        <td>${new Date(p.tanggal_penjualan).toLocaleDateString('id-ID')}</td>
+                        <td class="fw-semibold">{{ auth()->user()->name ?? 'Kasir' }}</td>
                         <td class="fw-bold text-warning">
-                            Rp ${parseInt(p.total_harga).toLocaleString()}
+                            Rp ${parseInt(p.total_harga || 0).toLocaleString('id-ID')}
                         </td>
-
                         <td>
                             <span class="badge bg-secondary">
-                                Belum Sync
+                                 offline
                             </span>
                         </td>
-
-                        <td>
+                        <td class="text-center">
                             <button class="btn btn-secondary btn-sm" disabled>
                                 Menunggu Online
                             </button>
                         </td>
-
                     </tr>
-                    ` + tbody.innerHTML;
+                `).join('');
 
-                });
+                tbody.insertAdjacentHTML('afterbegin', rowsHtml);
+            }
 
+            document.addEventListener('DOMContentLoaded', renderOfflinePenjualans);
+
+            window.addEventListener('penjualan-sync-update', function(e) {
+                if (e.detail && e.detail.justSynced > 0) {
+                    // Ada transaksi yang baru saja benar-benar tersimpan ke
+                    // database -> reload supaya datanya (dengan ID & data asli
+                    // dari server) langsung tampil di tabel.
+                    window.location.reload();
+                } else {
+                    // Belum ada yang baru tersinkron, cukup sinkronkan ulang
+                    // tampilan baris "Belum Sync"-nya saja (misal jumlahnya
+                    // berubah karena ada transaksi offline baru ditambahkan).
+                    renderOfflinePenjualans();
+                }
             });
         </script>
 

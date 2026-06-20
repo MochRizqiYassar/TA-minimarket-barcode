@@ -72,7 +72,7 @@
                 <div class="sidebar-header">
                     <div class="d-flex justify-content-between">
                         <div class="logo">
-                            <a href="{{ route('dashboard') }}">
+                            <a href="{{ route('kasir.dashboard') }}">
 
                                 <img src="{{ asset('assets/images/logo/toko1.png') }}" alt="Toko1"
                                     style="width: 220px; height: auto;">
@@ -89,8 +89,8 @@
                     <ul class="menu">
                         <li class="sidebar-title">Menu</li>
 
-                        <li class="sidebar-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                            <a href="{{ route('dashboard') }}" class='sidebar-link'>
+                        <li class="sidebar-item {{ request()->routeIs('dashboard') || request()->routeIs('kasir.dashboard') ? 'active' : '' }}">
+                            <a href="{{ route('kasir.dashboard') }}" class='sidebar-link'>
                                 <i class="bi bi-grid-fill"></i>
                                 <span>Dashboard</span>
                             </a>

@@ -1,33 +1,28 @@
-/**
- * Service Worker - Inventori Kasir
- *
- * Strategi:
- * 1. Halaman (navigasi: dashboard, /penjualan, /penjualan/create, dll)
- *    -> Network First, fallback ke Cache, fallback terakhir ke halaman /offline.html
- *    Setiap halaman yang berhasil dibuka saat online otomatis disimpan ke cache,
- *    jadi kalau nanti koneksi putus, halaman terakhir yang pernah dibuka tetap bisa diakses.
- *
- * 2. Asset statis (css, js, gambar, font)
- *    -> Cache First, fallback ke network. Dipakai supaya tampilan (layout, css, js)
- *      tidak hilang saat offline.
- *
- * 3. Request API/AJAX (misalnya fetch ke /penjualan dengan method POST)
- *    -> TIDAK disentuh sama sekali oleh service worker ini (dibiarkan gagal natural),
- *      supaya logic offline-sync di offline-db.js / offline-sync.js yang menangani.
- */
-
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v5';
 const CACHE_NAME = 'inventori-cache-' + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';
 
-// Halaman penting yang langsung di-precache saat service worker pertama kali aktif.
-// Jadi sejak awal install, kasir bisa pindah-pindah menu walau internet tiba-tiba mati.
+const LOGIN_CACHE_NAME = 'inventori-login-cache-' + CACHE_VERSION;
+const LOGIN_URL = '/login';
+
 const PRECACHE_URLS = [
     '/offline.html',
-    '/dashboard',
+    '/kasir/dashboard',
     '/penjualan',
     '/penjualan/create',
 ];
+
+async function cleanResponse(response) {
+    if (!response.redirected) {
+        return response;
+    }
+    const body = await response.clone().blob();
+    return new Response(body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+    });
+}
 
 self.addEventListener('install', event => {
     event.waitUntil(
@@ -35,19 +30,14 @@ self.addEventListener('install', event => {
             return Promise.allSettled(
                 PRECACHE_URLS.map(url =>
                     fetch(url, { credentials: 'same-origin' })
-                        .then(response => {
-                            // Hanya simpan kalau benar-benar berhasil (200) DAN
-                            // bukan halaman login (kasir/admin belum login akan
-                            // diarahkan ke /login, jangan sampai itu yang ke-cache
-                            // sebagai pengganti halaman dashboard/penjualan asli).
+                        .then(async response => {
+
                             if (response.ok && !response.url.includes('/login')) {
-                                return cache.put(url, response);
+                                return cache.put(url, await cleanResponse(response));
                             }
                         })
                         .catch(() => {
-                            // Kalau salah satu URL gagal di-precache (misal belum
-                            // login atau memang offline saat install), jangan
-                            // sampai bikin instalasi service worker gagal total.
+
                         })
                 )
             );
@@ -58,7 +48,11 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys =>
-            Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))
+            Promise.all(
+                keys
+                    .filter(key => key !== CACHE_NAME && key !== LOGIN_CACHE_NAME)
+                    .map(key => caches.delete(key))
+            )
         ).then(() => self.clients.claim())
     );
 });
@@ -74,6 +68,17 @@ self.addEventListener('fetch', event => {
 
     // ===== 1. NAVIGASI HALAMAN (klik link sidebar, refresh, dll) =====
     if (req.mode === 'navigate') {
+        const url = new URL(req.url);
+
+        // Halaman /login ditangani terpisah (lihat networkFirstForLoginPage):
+        // disimpan ke cache sendiri supaya tidak bercampur dengan halaman
+        // dashboard/penjualan, dan supaya tetap punya fallback tampilan form
+        // login walau lagi offline saat sesi habis / mau login ulang.
+        if (url.pathname === LOGIN_URL) {
+            event.respondWith(networkFirstForLoginPage(req));
+            return;
+        }
+
         event.respondWith(networkFirstForPages(req));
         return;
     }
@@ -102,8 +107,14 @@ async function networkFirstForPages(request) {
         // Halaman berhasil diambil dari server -> simpan salinan terbaru ke cache.
         // Jangan cache kalau ternyata di-redirect ke /login (sesi habis), supaya
         // cache halaman dashboard/penjualan tidak ketiban halaman login.
+        //
+        // response.clone() di sini tetap membawa flag redirected (kalau request
+        // ini sempat di-redirect server, mis. lewat route redirector). Itu masih
+        // aman SELAMA key cache-nya = URL request yang sama dengan URL akhir
+        // response (artinya tidak ada redirect, browser sudah mengarah ke URL
+        // yang benar sebelum sampai sini). Tetap dibersihkan untuk jaga-jaga.
         if (response && response.status === 200 && !response.url.includes('/login')) {
-            cache.put(request, response.clone());
+            cache.put(request, await cleanResponse(response.clone()));
         }
 
         return response;
@@ -124,6 +135,49 @@ async function networkFirstForPages(request) {
         // Last resort kalau offline.html pun belum ke-cache
         return new Response(
             '<h1>Offline</h1><p>Halaman ini belum tersedia secara offline.</p>',
+            { headers: { 'Content-Type': 'text/html' } }
+        );
+    }
+}
+
+async function networkFirstForLoginPage(request) {
+    const loginCache = await caches.open(LOGIN_CACHE_NAME);
+
+    try {
+        const response = await fetch(request);
+
+        // Kalau user yang request ini SUDAH login, server akan me-redirect
+        // /login ke dashboard (middleware 'guest'). response.url pada kasus
+        // itu tidak lagi diakhiri '/login' -- jangan simpan itu sebagai
+        // pengganti halaman login (supaya cache login tidak ketiban
+        // halaman dashboard milik user lain/sesi lain).
+        if (response && response.status === 200 && new URL(response.url).pathname === LOGIN_URL) {
+            loginCache.put(request, await cleanResponse(response.clone()));
+        }
+
+        return response;
+
+    } catch (err) {
+        // Network gagal (offline) -> coba ambil tampilan form login dari cache.
+        // CATATAN: ini HANYA mengembalikan HTML form-nya. Submit (POST) tetap
+        // butuh internet, jadi ini bukan login offline -- cuma supaya kasir
+        // tidak nyasar ke halaman offline.html generik saat yang sebenarnya
+        // dia butuhkan cuma form login untuk login ulang.
+        const cachedLogin = await loginCache.match(request);
+        if (cachedLogin) {
+            return cachedLogin;
+        }
+
+        // Belum pernah berhasil membuka /login saat online -> tidak ada apapun
+        // yang bisa disuguhkan, jatuh ke offline.html seperti halaman lain.
+        const mainCache = await caches.open(CACHE_NAME);
+        const offlineFallback = await mainCache.match(OFFLINE_URL);
+        if (offlineFallback) {
+            return offlineFallback;
+        }
+
+        return new Response(
+            '<h1>Offline</h1><p>Halaman login belum tersedia secara offline.</p>',
             { headers: { 'Content-Type': 'text/html' } }
         );
     }
