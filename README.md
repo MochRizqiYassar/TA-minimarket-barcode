@@ -1,58 +1,96 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+ARTHAPURA (Toko Retail)– Sistem Informasi Inventori dan Penjualan Toko
+ARTHAPURA (Toko Retail) merupakan aplikasi berbasis web yang dikembangkan sebagai Tugas Akhir Program Studi Teknologi Rekayasa Perangkat Lunak, Politeknik Negeri Banyuwangi.
+Sistem ini dibangun untuk membantu proses pengelolaan stok barang, kulakan (pembelian ke supplier), penjualan (kasir), hingga pelaporan pada sebuah toko, dengan menerapkan metode pengembangan Rapid Application Development (RAD) agar sistem dapat dibangun secara kompleks dengan sesuai kebutuhan mitra pengguna di lapangan.
+🚀 Fitur Utama
+•	Login dengan sistem role (Admin & Kasir) beserta approval akun oleh Admin
+•	Manajemen data barang, kategori, dan tipe barang
+•	Manajemen data supplier
+•	Kulakan (pembelian stok ke supplier) beserta approval kulakan
+•	Scan nota kulakan otomatis menggunakan OCR (Tesseract)
+•	Barang masuk (penerimaan stok)
+•	Penjualan (kasir) beserta cetak struk
+•	Generate barcode barang (otomatis maupun manual)
+•	Monitoring stok real-time & notifikasi stok minimum
+•	Laporan barang masuk, laporan penjualan, dan laporan barang terlaris (export PDF)
+•	Dashboard Admin dan Dashboard Kasir
+•	Dukungan mode offline (Service Worker + sinkronisasi data) untuk transaksi kasir
+🛠️ Teknologi yang Digunakan
+Backend
+•	Laravel 13
+•	PHP 8.3
+•	MySQL / SQLite
+Frontend
+•	Blade
+•	Livewire
+•	Tailwind CSS
+•	Alpine.js
+•	Vite
+Pendukung Lainnya
+•	barryvdh/laravel-dompdf — export laporan & struk ke PDF
+•	milon/barcode — generate barcode barang
+•	thiagoalessio/tesseract_ocr — pembacaan teks otomatis dari nota kulakan
+•	intervention/image — pengolahan gambar
+•	Service Worker & IndexedDB — dukungan mode offline
+⚙️ Instalasi
+📋 Prasyarat
+Pastikan telah menginstal:
+•	PHP 8.3 atau lebih baru
+•	Composer
+•	Node.js dan npm
+•	MySQL (atau cukup SQLite untuk pengembangan lokal)
+•	Tesseract OCR (untuk fitur scan nota kulakan)
+•	Git
+1. Clone Repository
+git clone https://github.com/MochRizqiYassar/TA2026-362258302088-MochRizqiYassar.git
+cd TA2026-362258302088-MochRizqiYassar
+2. Install Dependency
+composer install
+npm install
+3. Konfigurasi Environment
+cp .env.example .env
+php artisan key:generate
+Sesuaikan konfigurasi database pada file .env. Secara default project ini sudah dikonfigurasi menggunakan SQLite (DB_CONNECTION=sqlite); apabila ingin menggunakan MySQL, ubah bagian DB_* sesuai kebutuhan.
+4. Konfigurasi Tesseract OCR
+Tambahkan path instalasi Tesseract pada file .env:
+TESSERACT_PATH="C:/Program Files/Tesseract-OCR/tesseract.exe"
+TESSDATA_PREFIX="C:/Program Files/Tesseract-OCR/tessdata"
+Sesuaikan path di atas dengan lokasi instalasi Tesseract OCR pada perangkat Anda.
+5. Konfigurasi Identitas Toko
+Tambahkan pada file .env untuk menampilkan identitas toko pada struk penjualan:
+TOKO_NAMA="Arthapura"
+TOKO_ALAMAT="Banyuwangi Jl.Ikan Layur"
+TOKO_TELEPON="081515522904"
+6. Migrasi dan Seeder
+php artisan migrate --seed
+Atau, jika akun admin dibuat menggunakan seeder terpisah:
+php artisan db:seed --class=AdminSeeder
+7. Menjalankan Aplikasi
+Jalankan Vite:
+npm run dev
+Buka terminal baru, kemudian jalankan server Laravel:
+php artisan serve
+Secara default aplikasi dapat diakses melalui:
+http://127.0.0.1:8000
+Alternatif: gunakan composer run dev untuk menjalankan server, queue listener, log viewer, dan Vite secara bersamaan dalam satu perintah.
+🧩 Metode Pengembangan: Rapid Application Development (RAD)
+Sistem ini dikembangkan menggunakan metode Rapid Application Development (RAD), yaitu model pengembangan perangkat lunak yang menekankan pada siklus pengembangan singkat, iteratif, dan melibatkan pengguna secara aktif dalam setiap tahapannya. Tahapan RAD yang diterapkan pada pengembangan sistem ini meliputi:
+1.	Requirements Planning Identifikasi kebutuhan fungsional dan non-fungsional sistem melalui wawancara/observasi terhadap proses bisnis toko, seperti alur kulakan, penjualan, dan pelaporan stok.
+2.	User Design Perancangan alur sistem, struktur basis data, serta antarmuka (UI/UX) dilakukan secara iteratif bersama calon pengguna (admin dan kasir), sehingga rancangan dapat langsung disesuaikan berdasarkan umpan balik.
+3.	Construction Tahap membangun sistem sekaligus melakukan pengujian pada setiap modul yang telah selesai dikembangkan (barang, kulakan, penjualan, laporan, dsb.), sehingga perbaikan dapat dilakukan secara cepat tanpa menunggu seluruh sistem selesai.
+4.	Cutover (Implementation) Tahap pengujian akhir secara menyeluruh, pelatihan pengguna, serta implementasi sistem untuk digunakan secara nyata pada proses operasional toko.
+Pendekatan RAD dipilih karena kebutuhan sistem bersifat dinamis dan memerlukan keterlibatan pengguna secara langsung untuk menghasilkan sistem yang sesuai dengan proses bisnis toko yang sebenarnya.
+📈 Evaluasi Sistem
+Kinerja sistem dievaluasi menggunakan:
+•	Black Box Testing, untuk memastikan setiap fungsi sistem (manajemen barang, kulakan, penjualan, laporan, dll.) berjalan sesuai dengan yang diharapkan.
+•	User Acceptance Testing (UAT), untuk mengukur tingkat penerimaan pengguna (admin dan kasir) terhadap sistem berdasarkan aspek fungsionalitas dan kemudahan penggunaan.
+👤 Pengembang
+Informasi	Detail
+Nama	: Moch.Rizqi Yassar
+NIM	: 362258302088
+Program Studi	: Teknologi Rekayasa Perangkat Lunak
+Institusi	: Politeknik Negeri Banyuwangi
+Email	: kikioryassar.2003@gmail.com
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+📄 Lisensi
+Repository ini dikembangkan sebagai bagian dari penelitian Tugas Akhir Program Studi Teknologi Rekayasa Perangkat Lunak, Politeknik Negeri Banyuwangi dan digunakan untuk keperluan akademik.
 
-## About Laravel
-
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
-```
-
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
