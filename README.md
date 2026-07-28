@@ -56,8 +56,8 @@ Pastikan telah menginstal:
 1. Clone Repository
 
 ```bash
-git clone https://github.com/username-anda/nama-repo-anda.git
-cd nama-repo-anda
+git clone git clone https://github.com/MochRizqiYassar/TA2026-362258302088-MochRizqiYassar.git
+cd TA2026-362258302088-MochRizqiYassar
 ```
 
 2. Install Dependency
